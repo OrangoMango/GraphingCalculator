@@ -18,8 +18,4 @@ public class Result{
 	public List<Pair<Double, Double>> getValue(){
 		return this.value;
 	}
-
-	public double getStep(){
-		return this.step;
-	}
 }

@@ -32,10 +32,11 @@ public class GraphFunction{
 		return this.result;
 	}
 
-	public void buildInterval(double from, double to, double step){
+	public void buildInterval(double from, double to, double step, double minY, double maxY){
 		List<Pair<Double, Double>> value = new ArrayList<>();
 		for (double i = from; i <= to; i += step){
-			value.add(new Pair<Double, Double>(i, func.apply(i)));
+			double y = func.apply(i);
+			value.add(new Pair<Double, Double>(i, y > minY && y < maxY ? y : null));
 		}
 
 		this.result = new Result(from, to, step, value);
