@@ -27,6 +27,7 @@ public class MainApplication extends Application{
 
 	// DEBUG
 	private double xSample = 0;
+	private double calcDelta = 0.01;
 
 	@Override
 	public void start(Stage stage){
@@ -49,12 +50,8 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		this.functions.add(new GraphFunction(Color.BLUE, x -> 5/x*Math.sin(2*Math.PI*x)));
-		this.functions.add(new GraphFunction(Color.RED, x -> x*x));
-		//this.functions.add(new GraphFunction(Color.BLUE, x -> x*x));
-		//this.functions.add(new GraphFunction(Color.RED, x -> 2*x*x));
-		//this.functions.add(new GraphFunction(Color.BLUE, x -> Math.abs(Math.log(x))));
-		//this.functions.add(new GraphFunction(Color.RED, x -> 1-x*x));
+		this.functions.add(new GraphFunction(Color.BLUE, x -> 5*x+2));
+		this.functions.add(new GraphFunction(Color.RED, x -> Math.sqrt(25-x*x)));
 		for (GraphFunction func : this.functions){
 			func.buildInterval(-10, 10, 0.005, -10, 10);
 		}
@@ -95,32 +92,43 @@ public class MainApplication extends Application{
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> output = new ArrayList<>();
 
-		double prevDelta = Double.NaN;
-		Boolean sign = null;
 		for (double i = -10; i < 10; i += 0.001){
 			double delta = Math.abs(f1.getDefinition().apply(i)-f2.getDefinition().apply(i));
-			if (!Double.isNaN(prevDelta)){
-				boolean s = delta-prevDelta > 0;
-				if (sign != null && sign != s){
-					System.out.println("Potential solution: "+i);
-					Double solution = findPoint(f1, f2, i, 0.001, 1);
-					if (solution != null) output.add(solution);
-				}
-				sign = s;
+			if (delta < this.calcDelta){
+				//System.out.println("Potential solution: "+i);
+				Double solution = findPoint(f1, f2, i, 0.001, 1);
+				if (solution != null) output.add(solution);
 			}
-			prevDelta = delta;
 		}
 
-		return output;
+		List<Double> temp = new ArrayList<>(output.stream().distinct().toList());
+		List<Double> result = new ArrayList<>();
+		for (int i = 0; i < temp.size(); i++){
+			double sol = temp.get(i);
+			double sum = sol;
+			int n = 1;
+			for (int j = i+1; j < temp.size(); j++){
+				double sol2 = temp.get(j);
+				if (Math.abs(sol-sol2) < 0.1){
+					sum += sol2;
+					n++;
+				}
+			}
+			result.add(sum/n);
+			i += n-1;
+		}
+
+		return result;
 	}
 
 	private Double findPoint(GraphFunction f1, GraphFunction f2, double value, double step, int depth){
 		double delta1 = Math.abs(f1.getDefinition().apply(value-step/2)-f2.getDefinition().apply(value-step/2));
 		double delta2 = Math.abs(f1.getDefinition().apply(value+step/2)-f2.getDefinition().apply(value+step/2));	
 
-		if (depth == 50){
-			System.out.println("Reached depth 50 and the value is: "+value);
+		if (depth == 25){
 			if (Math.abs(delta1) < 0.001 && Math.abs(delta2) < 0.001){ // Must be almost 0
+				//System.out.println("Reached depth 50 and the value is: "+value);
+				//System.out.println("Deltas: "+delta1+" and "+delta2);
 				return value;	
 			} else return null;
 		}
@@ -130,11 +138,7 @@ public class MainApplication extends Application{
 		} else if (delta1 > delta2){
 			return findPoint(f1, f2, value+step/2, step/2, depth+1);
 		} else {
-			System.out.println(delta1+" and "+delta2+" are the same");
-			if (Math.abs(delta1) < 0.001){ // Must be almost 0
-				System.out.println("the deltas are 0");
-				return value; // TODO
-			} else return null;
+			return findPoint(f1, f2, value-step/2, step/2, depth+1); // Pick a random way
 		}
 	}
 
@@ -160,21 +164,60 @@ public class MainApplication extends Application{
 			System.exit(0);
 		}
 
-		// Debug xSample
+		// DEBUG
+		if (this.keys.getOrDefault(KeyCode.DIGIT1, false)){
+			List<GraphFunction> temp = new ArrayList<>();
+			temp.add(new GraphFunction(Color.BLUE, x -> 5/x*Math.sin(2*Math.PI*x)));
+			temp.add(new GraphFunction(Color.RED, x -> x*x));
+			this.functions = temp;
+			for (GraphFunction func : this.functions){
+				func.buildInterval(-10, 10, 0.005, -10, 10);
+			}
+			this.keys.put(KeyCode.DIGIT1, false);
+		} else if (this.keys.getOrDefault(KeyCode.DIGIT2, false)){
+			List<GraphFunction> temp = new ArrayList<>();
+			temp.add(new GraphFunction(Color.BLUE, x -> x*x));
+			temp.add(new GraphFunction(Color.RED, x -> 2*x*x));
+			this.functions = temp;
+			for (GraphFunction func : this.functions){
+				func.buildInterval(-10, 10, 0.005, -10, 10);
+			}
+			this.keys.put(KeyCode.DIGIT2, false);
+		} else if (this.keys.getOrDefault(KeyCode.DIGIT3, false)){
+			List<GraphFunction> temp = new ArrayList<>();
+			temp.add(new GraphFunction(Color.BLUE, x -> Math.abs(Math.log(x))));
+			temp.add(new GraphFunction(Color.RED, x -> 1-x*x));
+			this.functions = temp;
+			for (GraphFunction func : this.functions){
+				func.buildInterval(-10, 10, 0.005, -10, 10);
+			}
+			this.keys.put(KeyCode.DIGIT3, false);
+		}
+
 		if (this.keys.getOrDefault(KeyCode.LEFT, false)){
 			this.xSample -= 0.001;
 			this.keys.put(KeyCode.LEFT, false);
 		} else if (this.keys.getOrDefault(KeyCode.RIGHT, false)){
 			this.xSample += 0.001;
 			this.keys.put(KeyCode.RIGHT, false);
+		} else if (this.keys.getOrDefault(KeyCode.SPACE, false)){
+			List<Double> output = findIntersections(this.functions.get(0), this.functions.get(1));
+			System.out.println("Solution: "+output);
+			this.keys.put(KeyCode.SPACE, false);
+		} else if (this.keys.getOrDefault(KeyCode.UP, false)){
+			this.calcDelta *= 10;
+			this.keys.put(KeyCode.UP, false);
+		} else if (this.keys.getOrDefault(KeyCode.DOWN, false)){
+			this.calcDelta /= 10;
+			this.keys.put(KeyCode.DOWN, false);
 		}
 
-		gc.setFill(Color.GREEN);
+		/*gc.setFill(Color.GREEN);
 		gc.setFont(new Font("sans-serif", 20));
 		gc.setTextAlign(TextAlignment.LEFT);
 		double value1 = this.functions.get(0).getDefinition().apply(this.xSample);
 		double value2 = this.functions.get(1).getDefinition().apply(this.xSample);
-		gc.fillText(String.format("xSample: %.15f\nf1: %.15f\nf2: %.15f\ndelta: %.15f", this.xSample, value1, value2, Math.abs(value1-value2)), 50, 50);
+		gc.fillText(String.format("xSample: %.15f\nf1: %.15f\nf2: %.15f\ndelta: %.15f\n\ncalcDelta: %.15f", this.xSample, value1, value2, Math.abs(value1-value2), this.calcDelta), 50, 50);*/
 
 		gc.save();
 		gc.translate(-this.cameraX, -this.cameraY);
@@ -186,9 +229,9 @@ public class MainApplication extends Application{
 		gc.strokeLine(this.cameraX, HEIGHT/2, this.cameraX+WIDTH, HEIGHT/2);
 
 		// Debug axis
-		gc.setStroke(Color.GREEN);
-		gc.setLineWidth(3);
-		gc.strokeLine(WIDTH/2+this.xSample*this.scaleFactor, this.cameraY, WIDTH/2+this.xSample*this.scaleFactor, this.cameraY+HEIGHT);
+		//gc.setStroke(Color.GREEN);
+		//gc.setLineWidth(3);
+		//gc.strokeLine(WIDTH/2+this.xSample*this.scaleFactor, this.cameraY, WIDTH/2+this.xSample*this.scaleFactor, this.cameraY+HEIGHT);
 
 		// Numbers
 		gc.setFill(Color.BLACK);

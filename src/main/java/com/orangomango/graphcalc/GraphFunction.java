@@ -35,7 +35,7 @@ public class GraphFunction{
 	public void buildInterval(double from, double to, double step, double minY, double maxY){
 		List<Pair<Double, Double>> value = new ArrayList<>();
 		for (double i = from; i <= to; i += step){
-			double y = func.apply(i);
+			double y = func.apply((int)(i*1000)/1000.0); // Round to 3 decimal digits
 			value.add(new Pair<Double, Double>(i, y > minY && y < maxY ? y : null));
 		}
 
