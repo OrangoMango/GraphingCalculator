@@ -122,7 +122,7 @@ public class Evaluator{
 		}
 
 		String value = builder.toString();
-		Double output = Double.NaN;
+		Double output = null;
 		if (value.equals("")){
 			if (funcName.equals("PI")){
 				output = Math.PI;
@@ -146,11 +146,15 @@ public class Evaluator{
 					output = Math.cos(x);
 				} else if (funcName.equals("tan")){
 					output = Math.tan(x);
+				} else if (funcName.equals("ln")){
+					output = Math.log(x);
+				} else if (funcName.equals("log")){
+					output = Math.log10(x);
 				}
 			}
 		}
 
-		if (!output.isNaN()){
+		if (output != null){
 			if (skip('^')){
 				double exp = parseFactor();
 				return Math.pow(output, exp);

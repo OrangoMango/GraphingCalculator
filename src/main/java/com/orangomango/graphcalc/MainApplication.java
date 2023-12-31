@@ -108,9 +108,45 @@ public class MainApplication extends Application{
 			content.add(new VBox(5, add, remove), 1, 0);
 			alert.showAndWait();
 		});
+		MenuItem calculate = new MenuItem("Find intersection");
+		calculate.setOnAction(e -> {
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setTitle("Calculate intersection");
+			alert.setHeaderText("Select 2 equations");
+			GridPane gpane = new GridPane();
+			gpane.setPadding(new Insets(5, 5, 5, 5));
+			gpane.setVgap(5);
+			gpane.setHgap(5);
+			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
+			for (GraphFunction f : this.functions){
+				box.getItems().add(f);
+			}
+			ChoiceBox<GraphFunction> box2 = new ChoiceBox<>();
+			for (GraphFunction f : this.functions){
+				box2.getItems().add(f);
+			}
+			box.setMinWidth(150);
+			box2.setMinWidth(150);
+			if (this.functions.size() > 0) box.getSelectionModel().select(0);
+			if (this.functions.size() > 0) box2.getSelectionModel().select(this.functions.size() < 2 ? 0 : 1);
+			gpane.add(box, 0, 0);
+			gpane.add(box2, 0, 1);
+			alert.getDialogPane().setContent(gpane);
+			alert.showAndWait();
+
+			// Calculate the result
+			Alert info = new Alert(Alert.AlertType.INFORMATION);
+			info.setTitle("Resul");
+			info.setHeaderText("Intersections found:");
+			List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
+			StringBuilder builder = new StringBuilder();
+			output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+			info.setContentText(builder.toString());
+			info.showAndWait();
+		});
 
 		menuBar.getMenus().addAll(fileMenu, editMenu);
-		editMenu.getItems().addAll(editGraphs);
+		editMenu.getItems().addAll(editGraphs, calculate);
 		pane.add(menuBar, 0, 0);
 
 		Canvas canvas = new Canvas(WIDTH, HEIGHT);
@@ -131,14 +167,11 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		this.functions.add(new GraphFunction(Color.BLUE, "y = 5*x"));
-		this.functions.add(new GraphFunction(Color.RED, "y = cos(x)"));
+		this.functions.add(new GraphFunction(Color.BLUE, "y = ln(x+6)"));
+		this.functions.add(new GraphFunction(Color.RED, "y = abs(x)"));
 		for (GraphFunction func : this.functions){
 			func.buildInterval(-10, 10, 0.005, -10, 10);
 		}
-
-		List<Double> output = findIntersections(this.functions.get(0), this.functions.get(1));
-		System.out.println(output);
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
