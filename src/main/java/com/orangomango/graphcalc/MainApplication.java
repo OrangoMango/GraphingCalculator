@@ -81,27 +81,27 @@ public class MainApplication extends Application{
 				gpane.setVgap(5);
 				Label label = new Label("Equation: ");
 				TextField field = new TextField();
-				ColorPicker picker = new ColorPicker();
+				ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
 				gpane.add(label, 0, 0);
 				gpane.add(field, 1, 0);
 				gpane.add(picker, 0, 1, 2, 1);
+				field.requestFocus();
 				dialog.getDialogPane().setContent(gpane);
 				dialog.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 					synchronized (this){
 						GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-						f.buildInterval(-10, 10, 0.005, -10, 10);
+						GraphFunction.addFunction(this.functions, f);
 						list.getItems().add(f);
-						this.functions.add(f);
 					}
 				});
 			});
 			Button remove = new Button("Remove");
 			remove.setOnAction(ev -> {
-				List<GraphFunction> selected = list.getSelectionModel().getSelectedItems();
+				List<GraphFunction> selected = new ArrayList<>(list.getSelectionModel().getSelectedItems());
 				synchronized (this){
 					for (GraphFunction f : selected){
+						GraphFunction.removeFunction(this.functions, f);
 						list.getItems().remove(f);
-						this.functions.remove(f);
 					}
 				}
 			});
@@ -110,7 +110,7 @@ public class MainApplication extends Application{
 		});
 		MenuItem calculate = new MenuItem("Find intersection");
 		calculate.setOnAction(e -> {
-			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
 			alert.setTitle("Calculate intersection");
 			alert.setHeaderText("Select 2 equations");
 			GridPane gpane = new GridPane();
@@ -132,17 +132,17 @@ public class MainApplication extends Application{
 			gpane.add(box, 0, 0);
 			gpane.add(box2, 0, 1);
 			alert.getDialogPane().setContent(gpane);
-			alert.showAndWait();
-
-			// Calculate the result
-			Alert info = new Alert(Alert.AlertType.INFORMATION);
-			info.setTitle("Resul");
-			info.setHeaderText("Intersections found:");
-			List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
-			StringBuilder builder = new StringBuilder();
-			output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
-			info.setContentText(builder.toString());
-			info.showAndWait();
+			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
+				// Calculate the result
+				Alert info = new Alert(Alert.AlertType.INFORMATION);
+				info.setTitle("Resul");
+				info.setHeaderText("Intersections found:");
+				List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
+				StringBuilder builder = new StringBuilder();
+				output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+				info.setContentText(builder.toString());
+				info.showAndWait();
+			});
 		});
 
 		menuBar.getMenus().addAll(fileMenu, editMenu);
@@ -167,11 +167,8 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		this.functions.add(new GraphFunction(Color.BLUE, "y = ln(x+6)"));
-		this.functions.add(new GraphFunction(Color.RED, "y = abs(x)"));
-		for (GraphFunction func : this.functions){
-			func.buildInterval(-10, 10, 0.005, -10, 10);
-		}
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = abs(x+6)"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "5*y^2-6*x*y = -5*x^2+8"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -203,6 +200,7 @@ public class MainApplication extends Application{
 		stage.show();
 	}
 
+	// TODO: support quadratic equations
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> output = new ArrayList<>();
 
@@ -308,22 +306,46 @@ public class MainApplication extends Application{
 		}
 
 		synchronized (this){
+			gc.setLineWidth(1.5);
 			for (GraphFunction func : this.functions){
-				List<Pair<Double, Double>> result = func.getResult().getValue();
 				gc.setStroke(func.getColor());
-				gc.setLineWidth(1.5);
-				for (int i = 0; i < result.size(); i++){
-					Pair<Double, Double> point = result.get(i);
-					if (point.getValue() != null && !point.getValue().isNaN()){
-						Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
-						if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
-							gc.strokeLine(WIDTH/2+point.getKey()*this.scaleFactor, HEIGHT/2-point.getValue()*this.scaleFactor, WIDTH/2+next.getKey()*this.scaleFactor, HEIGHT/2-next.getValue()*this.scaleFactor);
+				for (Result rs : func.getResults()){
+					List<Pair<Double, Double>> result = rs.getValue();
+					for (int i = 0; i < result.size(); i++){
+						Pair<Double, Double> point = result.get(i);
+						if (point.getValue() != null && !point.getValue().isNaN()){
+							Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
+							if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
+								drawLine(gc, point, next);
+							}
 						}
 					}
+				}
+
+				// Connect the bounds of the results if it's a quadratic equation
+				if (func.isQuadratic()){
+					int firstN = -1;
+					int lastN = -1;
+					for (int i = 0; i < func.getResults().get(0).getValue().size(); i++){
+						Double y1 = func.getResults().get(0).getValue().get(i).getValue();
+						Double y2 = func.getResults().get(1).getValue().get(i).getValue();
+						if (y1 != null && firstN == -1){
+							firstN = i;
+						}
+						if (y1 == null && lastN == -1 && firstN != -1){
+							lastN = i-1;
+						}
+					}
+					drawLine(gc, func.getResults().get(0).getValue().get(firstN), func.getResults().get(1).getValue().get(firstN));
+					drawLine(gc, func.getResults().get(0).getValue().get(lastN), func.getResults().get(1).getValue().get(lastN));
 				}
 			}
 		}
 		gc.restore();
+	}
+
+	private void drawLine(GraphicsContext gc, Pair<Double, Double> point, Pair<Double, Double> next){
+		gc.strokeLine(WIDTH/2+point.getKey()*this.scaleFactor, HEIGHT/2-point.getValue()*this.scaleFactor, WIDTH/2+next.getKey()*this.scaleFactor, HEIGHT/2-next.getValue()*this.scaleFactor);
 	}
 
 	public static void main(String[] args){
