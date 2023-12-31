@@ -135,7 +135,7 @@ public class MainApplication extends Application{
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 				// Calculate the result
 				Alert info = new Alert(Alert.AlertType.INFORMATION);
-				info.setTitle("Resul");
+				info.setTitle("Result");
 				info.setHeaderText("Intersections found:");
 				List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
 				StringBuilder builder = new StringBuilder();
@@ -169,6 +169,7 @@ public class MainApplication extends Application{
 
 		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = abs(x+6)"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "5*y^2-6*x*y = -5*x^2+8"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = 5*x+2"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -200,15 +201,27 @@ public class MainApplication extends Application{
 		stage.show();
 	}
 
-	// TODO: support quadratic equations
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> output = new ArrayList<>();
 
+		List<Pair<Double, List<Double>>> pairs1 = new ArrayList<>();
+		List<Pair<Double, List<Double>>> pairs2 = new ArrayList<>();
 		for (double i = -10; i < 10; i += 0.001){
-			double delta = Math.abs(f1.getDefinition().apply(i)-f2.getDefinition().apply(i));
-			if (delta < 0.01){
-				Double solution = findPoint(f1, f2, i, 0.001, 1);
-				if (solution != null) output.add(solution);
+			pairs1.add(new Pair<>(i, f1.solveForY(i)));
+			pairs2.add(new Pair<>(i, f2.solveForY(i)));
+		}
+
+		for (int i = 0; i < pairs1.size(); i++){
+			Pair<Double, List<Double>> pair1 = pairs1.get(i);
+			Pair<Double, List<Double>> pair2 = pairs2.get(i);
+			for (int j = 0; j < pair1.getValue().size(); j++){
+				for (int k = 0; k < pair2.getValue().size(); k++){
+					double delta = Math.abs(pair1.getValue().get(j)-pair2.getValue().get(k));
+					if (delta < 0.01){
+						Double solution = findPoint(f1, f2, pair1.getKey(), 0.001, 1, j, k);
+						if (solution != null) output.add(solution);
+					}
+				}
 			}
 		}
 
@@ -232,22 +245,22 @@ public class MainApplication extends Application{
 		return result;
 	}
 
-	private Double findPoint(GraphFunction f1, GraphFunction f2, double value, double step, int depth){
-		double delta1 = Math.abs(f1.getDefinition().apply(value-step/2)-f2.getDefinition().apply(value-step/2));
-		double delta2 = Math.abs(f1.getDefinition().apply(value+step/2)-f2.getDefinition().apply(value+step/2));	
+	private Double findPoint(GraphFunction f1, GraphFunction f2, double value, double step, int depth, int solIndex1, int solIndex2){
+		double delta1 = Math.abs(f1.solveForY(value-step/2).get(solIndex1)-f2.solveForY(value-step/2).get(solIndex2));
+		double delta2 = Math.abs(f1.solveForY(value+step/2).get(solIndex1)-f2.solveForY(value+step/2).get(solIndex2));	
 
 		if (depth == 25){
-			if (Math.abs(delta1) < 0.001 && Math.abs(delta2) < 0.001){ // Must be almost 0
+			if (Math.abs(delta1) < 0.0015 && Math.abs(delta2) < 0.0015){ // Must be almost 0
 				return value;	
 			} else return null;
 		}
 
 		if (delta1 < delta2){
-			return findPoint(f1, f2, value-step/2, step/2, depth+1);
+			return findPoint(f1, f2, value-step/2, step/2, depth+1, solIndex1, solIndex2);
 		} else if (delta1 > delta2){
-			return findPoint(f1, f2, value+step/2, step/2, depth+1);
+			return findPoint(f1, f2, value+step/2, step/2, depth+1, solIndex1, solIndex2);
 		} else {
-			return findPoint(f1, f2, value-step/2, step/2, depth+1); // Pick a random way
+			return findPoint(f1, f2, value-step/2, step/2, depth+1, solIndex1, solIndex2); // Pick a random way
 		}
 	}
 

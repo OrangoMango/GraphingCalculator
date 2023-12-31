@@ -56,7 +56,7 @@ public class GraphFunction{
 		}
 	}
 
-	private List<Double> solveForY(double x){
+	public List<Double> solveForY(double x){
 		Map<String, Double> param = new HashMap<>();
 		param.put("x", x);
 		double a, b;
