@@ -4,15 +4,18 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.canvas.*;
 import javafx.scene.control.*;
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
 import javafx.util.Pair;
+import javafx.util.Callback;
 
 import java.util.*;
 
@@ -26,10 +29,6 @@ public class MainApplication extends Application{
 	private List<GraphFunction> functions = new ArrayList<>();
 	private double cameraX, cameraY;
 	private double scaleFactor = 40;
-
-	// DEBUG
-	private double xSample = 0;
-	private double calcDelta = 0.01;
 
 	@Override
 	public void start(Stage stage){
@@ -51,12 +50,62 @@ public class MainApplication extends Application{
 			content.setPrefWidth(350);
 			content.setPrefHeight(150);
 			alert.getDialogPane().setContent(content);
-			content.setPadding(new Insets(2, 2, 2, 2));
-			ListView<String> list = new ListView<>();
+			content.setPadding(new Insets(5, 5, 5, 5));
+			content.setHgap(5);
+			content.setVgap(5);
+			ListView<GraphFunction> list = new ListView<>();
+			list.setCellFactory(param -> new ListCell<>(){
+				@Override
+				public void updateItem(GraphFunction func, boolean empty){
+					super.updateItem(func, empty);
+					if (empty){
+						setText(null);
+						setGraphic(null);
+					} else if (func != null){
+						setText(func.toString());
+						setGraphic(new Rectangle(15, 15, func.getColor()));
+					}
+				}
+			});
 			for (GraphFunction f : this.functions){
-				list.getItems().add(String.format("%s [%.2f %.2f %.2f]", f.getExpression(), f.getColor().getRed(), f.getColor().getGreen(), f.getColor().getBlue()));
+				list.getItems().add(f);
 			}
 			content.add(list, 0, 0);
+			Button add = new Button("Add");
+			add.setOnAction(ev -> {
+				Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+				dialog.setTitle("Add equation");
+				GridPane gpane = new GridPane();
+				gpane.setPadding(new Insets(5, 5, 5, 5));
+				gpane.setHgap(5);
+				gpane.setVgap(5);
+				Label label = new Label("Equation: ");
+				TextField field = new TextField();
+				ColorPicker picker = new ColorPicker();
+				gpane.add(label, 0, 0);
+				gpane.add(field, 1, 0);
+				gpane.add(picker, 0, 1, 2, 1);
+				dialog.getDialogPane().setContent(gpane);
+				dialog.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
+					synchronized (this){
+						GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
+						f.buildInterval(-10, 10, 0.005, -10, 10);
+						list.getItems().add(f);
+						this.functions.add(f);
+					}
+				});
+			});
+			Button remove = new Button("Remove");
+			remove.setOnAction(ev -> {
+				List<GraphFunction> selected = list.getSelectionModel().getSelectedItems();
+				synchronized (this){
+					for (GraphFunction f : selected){
+						list.getItems().remove(f);
+						this.functions.remove(f);
+					}
+				}
+			});
+			content.add(new VBox(5, add, remove), 1, 0);
 			alert.showAndWait();
 		});
 
@@ -74,9 +123,9 @@ public class MainApplication extends Application{
 
 		canvas.setOnScroll(e -> {
 			if (e.getDeltaY() > 0){
-				this.scaleFactor += 0.5;
+				this.scaleFactor += 2;
 			} else if (e.getDeltaY() < 0){
-				this.scaleFactor -= 0.5;
+				this.scaleFactor -= 2;
 			}
 
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
@@ -126,8 +175,7 @@ public class MainApplication extends Application{
 
 		for (double i = -10; i < 10; i += 0.001){
 			double delta = Math.abs(f1.getDefinition().apply(i)-f2.getDefinition().apply(i));
-			if (delta < this.calcDelta){
-				//System.out.println("Potential solution: "+i);
+			if (delta < 0.01){
 				Double solution = findPoint(f1, f2, i, 0.001, 1);
 				if (solution != null) output.add(solution);
 			}
@@ -159,8 +207,6 @@ public class MainApplication extends Application{
 
 		if (depth == 25){
 			if (Math.abs(delta1) < 0.001 && Math.abs(delta2) < 0.001){ // Must be almost 0
-				//System.out.println("Reached depth 50 and the value is: "+value);
-				//System.out.println("Deltas: "+delta1+" and "+delta2);
 				return value;	
 			} else return null;
 		}
@@ -179,7 +225,7 @@ public class MainApplication extends Application{
 		gc.setFill(Color.web("#B1B1B1"));
 		gc.fillRect(0, 0, WIDTH, HEIGHT);
 
-		final int cameraSpeed = 4;
+		final int cameraSpeed = 8;
 		if (this.keys.getOrDefault(KeyCode.W, false)){
 			this.cameraY -= cameraSpeed;
 			this.keys.put(KeyCode.W, false);
@@ -196,61 +242,6 @@ public class MainApplication extends Application{
 			System.exit(0);
 		}
 
-		// DEBUG
-		if (this.keys.getOrDefault(KeyCode.DIGIT1, false)){
-			List<GraphFunction> temp = new ArrayList<>();
-			temp.add(new GraphFunction(Color.BLUE, x -> 5/x*Math.sin(2*Math.PI*x)));
-			temp.add(new GraphFunction(Color.RED, x -> x*x));
-			this.functions = temp;
-			for (GraphFunction func : this.functions){
-				func.buildInterval(-10, 10, 0.005, -10, 10);
-			}
-			this.keys.put(KeyCode.DIGIT1, false);
-		} else if (this.keys.getOrDefault(KeyCode.DIGIT2, false)){
-			List<GraphFunction> temp = new ArrayList<>();
-			temp.add(new GraphFunction(Color.BLUE, x -> x*x));
-			temp.add(new GraphFunction(Color.RED, x -> 2*x*x));
-			this.functions = temp;
-			for (GraphFunction func : this.functions){
-				func.buildInterval(-10, 10, 0.005, -10, 10);
-			}
-			this.keys.put(KeyCode.DIGIT2, false);
-		} else if (this.keys.getOrDefault(KeyCode.DIGIT3, false)){
-			List<GraphFunction> temp = new ArrayList<>();
-			temp.add(new GraphFunction(Color.BLUE, x -> Math.abs(Math.log(x))));
-			temp.add(new GraphFunction(Color.RED, x -> 1-x*x));
-			this.functions = temp;
-			for (GraphFunction func : this.functions){
-				func.buildInterval(-10, 10, 0.005, -10, 10);
-			}
-			this.keys.put(KeyCode.DIGIT3, false);
-		}
-
-		if (this.keys.getOrDefault(KeyCode.LEFT, false)){
-			this.xSample -= 0.001;
-			this.keys.put(KeyCode.LEFT, false);
-		} else if (this.keys.getOrDefault(KeyCode.RIGHT, false)){
-			this.xSample += 0.001;
-			this.keys.put(KeyCode.RIGHT, false);
-		} else if (this.keys.getOrDefault(KeyCode.SPACE, false)){
-			List<Double> output = findIntersections(this.functions.get(0), this.functions.get(1));
-			System.out.println("Solution: "+output);
-			this.keys.put(KeyCode.SPACE, false);
-		} else if (this.keys.getOrDefault(KeyCode.UP, false)){
-			this.calcDelta *= 10;
-			this.keys.put(KeyCode.UP, false);
-		} else if (this.keys.getOrDefault(KeyCode.DOWN, false)){
-			this.calcDelta /= 10;
-			this.keys.put(KeyCode.DOWN, false);
-		}
-
-		/*gc.setFill(Color.GREEN);
-		gc.setFont(new Font("sans-serif", 20));
-		gc.setTextAlign(TextAlignment.LEFT);
-		double value1 = this.functions.get(0).getDefinition().apply(this.xSample);
-		double value2 = this.functions.get(1).getDefinition().apply(this.xSample);
-		gc.fillText(String.format("xSample: %.15f\nf1: %.15f\nf2: %.15f\ndelta: %.15f\n\ncalcDelta: %.15f", this.xSample, value1, value2, Math.abs(value1-value2), this.calcDelta), 50, 50);*/
-
 		gc.save();
 		gc.translate(-this.cameraX, -this.cameraY);
 
@@ -259,11 +250,6 @@ public class MainApplication extends Application{
 		gc.setLineWidth(3);
 		gc.strokeLine(WIDTH/2, this.cameraY, WIDTH/2, this.cameraY+HEIGHT);
 		gc.strokeLine(this.cameraX, HEIGHT/2, this.cameraX+WIDTH, HEIGHT/2);
-
-		// Debug axis
-		//gc.setStroke(Color.GREEN);
-		//gc.setLineWidth(3);
-		//gc.strokeLine(WIDTH/2+this.xSample*this.scaleFactor, this.cameraY, WIDTH/2+this.xSample*this.scaleFactor, this.cameraY+HEIGHT);
 
 		// Numbers
 		gc.setFill(Color.BLACK);
@@ -288,16 +274,18 @@ public class MainApplication extends Application{
 			gc.fillText(String.format("%.1f", -y), WIDTH/2+17, HEIGHT/2+y*this.scaleFactor);
 		}
 
-		for (GraphFunction func : this.functions){
-			List<Pair<Double, Double>> result = func.getResult().getValue();
-			gc.setStroke(func.getColor());
-			gc.setLineWidth(1.5);
-			for (int i = 0; i < result.size(); i++){
-				Pair<Double, Double> point = result.get(i);
-				if (point.getValue() != null && !point.getValue().isNaN()){
-					Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
-					if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
-						gc.strokeLine(WIDTH/2+point.getKey()*this.scaleFactor, HEIGHT/2-point.getValue()*this.scaleFactor, WIDTH/2+next.getKey()*this.scaleFactor, HEIGHT/2-next.getValue()*this.scaleFactor);
+		synchronized (this){
+			for (GraphFunction func : this.functions){
+				List<Pair<Double, Double>> result = func.getResult().getValue();
+				gc.setStroke(func.getColor());
+				gc.setLineWidth(1.5);
+				for (int i = 0; i < result.size(); i++){
+					Pair<Double, Double> point = result.get(i);
+					if (point.getValue() != null && !point.getValue().isNaN()){
+						Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
+						if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
+							gc.strokeLine(WIDTH/2+point.getKey()*this.scaleFactor, HEIGHT/2-point.getValue()*this.scaleFactor, WIDTH/2+next.getKey()*this.scaleFactor, HEIGHT/2-next.getValue()*this.scaleFactor);
+						}
 					}
 				}
 			}
@@ -307,8 +295,5 @@ public class MainApplication extends Application{
 
 	public static void main(String[] args){
 		launch(args);
-
-		//System.out.println(Evaluator.buildFunction("cos(x)", "x", null).apply(-9.995));
-		//System.exit(0);
 	}
 }

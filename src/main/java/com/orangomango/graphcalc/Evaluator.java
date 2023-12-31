@@ -122,38 +122,43 @@ public class Evaluator{
 		}
 
 		String value = builder.toString();
+		Double output = Double.NaN;
 		if (value.equals("")){
 			if (funcName.equals("PI")){
-				return Math.PI;
+				output = Math.PI;
 			} else if (funcName.equals("E")){
-				return Math.E;
+				output = Math.E;
 			} else if (this.variables != null && this.variables.keySet().contains(funcName)){
-				return this.variables.get(funcName);
+				output = this.variables.get(funcName);
 			}
 		} else {
 			final double x = Double.parseDouble(value);
-			if (skip('^')){
-				double exp = parseExpression();
-				return Math.pow(x, exp);
-			} else {	
-				if (funcName.equals("")){
-					return x;
-				} else {
-					if (funcName.equals("sqrt")){
-						return Math.sqrt(x);
-					} else if (funcName.equals("abs")){
-						return Math.abs(x);
-					} else if (funcName.equals("sin")){
-						return Math.sin(x);
-					} else if (funcName.equals("cos")){
-						return Math.cos(x);
-					} else if (funcName.equals("tan")){
-						return Math.tan(x);
-					}
+			if (funcName.equals("")){
+				output = x;
+			} else {
+				if (funcName.equals("sqrt")){
+					output = Math.sqrt(x);
+				} else if (funcName.equals("abs")){
+					output = Math.abs(x);
+				} else if (funcName.equals("sin")){
+					output = Math.sin(x);
+				} else if (funcName.equals("cos")){
+					output = Math.cos(x);
+				} else if (funcName.equals("tan")){
+					output = Math.tan(x);
 				}
 			}
 		}
 
-		throw new RuntimeException("Unknown function/variable: "+funcName);
+		if (!output.isNaN()){
+			if (skip('^')){
+				double exp = parseFactor();
+				return Math.pow(output, exp);
+			} else {
+				return output;
+			}
+		} else {
+			throw new RuntimeException("Unknown function/variable: "+funcName);
+		}
 	}
 }

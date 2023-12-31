@@ -24,10 +24,6 @@ public class GraphFunction{
 		this.expression = f;
 	}
 
-	public String getExpression(){
-		return this.expression;
-	}
-
 	public Function<Double, Double> getDefinition(){
 		return this.func;
 	}
@@ -52,5 +48,10 @@ public class GraphFunction{
 		}
 
 		this.result = new Result(from, to, step, value);
+	}
+
+	@Override
+	public String toString(){
+		return "y="+this.expression;
 	}
 }
