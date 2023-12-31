@@ -3,8 +3,10 @@ package com.orangomango.graphcalc;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.canvas.*;
+import javafx.scene.control.*;
+import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -31,9 +33,39 @@ public class MainApplication extends Application{
 
 	@Override
 	public void start(Stage stage){
-		StackPane pane = new StackPane();
+		GridPane pane = new GridPane();
+		pane.setPadding(new Insets(5, 5, 5, 5));
+		pane.setHgap(5);
+		pane.setVgap(5);
+
+		// Menu
+		MenuBar menuBar = new MenuBar();
+		Menu fileMenu = new Menu("File");
+		Menu editMenu = new Menu("Edit");
+		MenuItem editGraphs = new MenuItem("Edit graphs");
+		editGraphs.setOnAction(e -> {
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setTitle("Edit");
+			alert.setHeaderText("Edit graphs");
+			GridPane content = new GridPane();
+			content.setPrefWidth(350);
+			content.setPrefHeight(150);
+			alert.getDialogPane().setContent(content);
+			content.setPadding(new Insets(2, 2, 2, 2));
+			ListView<String> list = new ListView<>();
+			for (GraphFunction f : this.functions){
+				list.getItems().add(String.format("%s [%.2f %.2f %.2f]", f.getExpression(), f.getColor().getRed(), f.getColor().getGreen(), f.getColor().getBlue()));
+			}
+			content.add(list, 0, 0);
+			alert.showAndWait();
+		});
+
+		menuBar.getMenus().addAll(fileMenu, editMenu);
+		editMenu.getItems().addAll(editGraphs);
+		pane.add(menuBar, 0, 0);
+
 		Canvas canvas = new Canvas(WIDTH, HEIGHT);
-		pane.getChildren().add(canvas);
+		pane.add(canvas, 0, 1);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 
 		canvas.setFocusTraversable(true);
@@ -50,8 +82,8 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		this.functions.add(new GraphFunction(Color.BLUE, x -> 5*x+2));
-		this.functions.add(new GraphFunction(Color.RED, x -> Math.sqrt(25-x*x)));
+		this.functions.add(new GraphFunction(Color.BLUE, "y = 5*x"));
+		this.functions.add(new GraphFunction(Color.RED, "y = cos(x)"));
 		for (GraphFunction func : this.functions){
 			func.buildInterval(-10, 10, 0.005, -10, 10);
 		}
@@ -83,7 +115,7 @@ public class MainApplication extends Application{
 		fpsCounter.setDaemon(true);
 		fpsCounter.start();
 
-		Scene scene = new Scene(pane, WIDTH, HEIGHT);
+		Scene scene = new Scene(pane, WIDTH+20, HEIGHT+50);
 		stage.setScene(scene);
 		stage.setResizable(false);
 		stage.show();
@@ -275,5 +307,8 @@ public class MainApplication extends Application{
 
 	public static void main(String[] args){
 		launch(args);
+
+		//System.out.println(Evaluator.buildFunction("cos(x)", "x", null).apply(-9.995));
+		//System.exit(0);
 	}
 }

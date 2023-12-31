@@ -10,10 +10,22 @@ public class GraphFunction{
 	private Function<Double, Double> func;
 	private Result result;
 	private Color color;
+	private String expression = null;
 
 	public GraphFunction(Color color, Function<Double, Double> f){
 		this.color = color;
 		this.func = f;
+	}
+
+	public GraphFunction(Color color, String f){
+		this.color = color;
+		f = f.split("=")[1].trim();
+		this.func = Evaluator.buildFunction(f, "x", null);
+		this.expression = f;
+	}
+
+	public String getExpression(){
+		return this.expression;
 	}
 
 	public Function<Double, Double> getDefinition(){
