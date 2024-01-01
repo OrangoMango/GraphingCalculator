@@ -13,7 +13,6 @@ public class GraphFunction{
 	private String expression = null;
 	private String a, b;
 	private boolean quadratic = false;
-	private String originalY = null;
 
 	public GraphFunction(Color color, String f){
 		this.color = color;
@@ -71,10 +70,11 @@ public class GraphFunction{
 	public GraphFunction transform(String xEq, String yEq){
 		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "x");
 		yEq = yEq.replace(" ", "").split("=")[1].replace("y'", "y");
-		String eq = this.expression.replace("x", "("+xEq+")");
-		System.out.format("Transformed equation: %s\n", eq);
-		GraphFunction f = new GraphFunction(this.color, eq);
-		f.originalY = yEq;
+		String eq = this.expression.replace("x", "("+xEq+")").replace("y", "("+yEq+")");
+		System.out.println("eq: "+eq);
+		Equation equation = new Equation(eq);
+		System.out.format("Transformed equation: %s\n", equation.getEquation());
+		GraphFunction f = new GraphFunction(this.color, equation.getEquation());
 		return f;
 	}
 
@@ -115,23 +115,15 @@ public class GraphFunction{
 		List<Double> output = new ArrayList<>();
 
 		if (a == 0){
-			output.add(calculateY(-c/b));
+			output.add(-c/b);
 		} else {
 			double y1 = (-b+Math.sqrt(b*b-4*a*c))/(2*a);
 			double y2 = (-b-Math.sqrt(b*b-4*a*c))/(2*a);
-			output.add(calculateY(y1));
-			output.add(calculateY(y2));
+			output.add(y1);
+			output.add(y2);
 		}
 
 		return output;
-	}
-
-	private double calculateY(double y){
-		if (this.originalY == null){
-			return y;
-		} else {
-			return y; // TODO
-		}
 	}
 
 	public Function<Double, Double> getDefinition(){

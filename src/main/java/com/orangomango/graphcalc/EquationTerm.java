@@ -44,8 +44,8 @@ public class EquationTerm{
 			if (termFound){
 				EquationTerm eq = output.remove(foundIndex);
 				List<String> parts = EquationTerm.getParts(eq.term, '*', '/');
-				if (parts.size() == 0){
-					String newTermString = compress(this.term.substring(1, this.term.length()-1));
+				if (parts.size() == 1){
+					String newTermString = compress(this.term.substring(2, this.term.length()-1));
 					if (!newTermString.startsWith("-")) newTermString = "+"+newTermString;
 					output.add(new EquationTerm(newTermString, this.left));
 				} else {
@@ -88,7 +88,7 @@ public class EquationTerm{
 		return output;
 	}
 
-	private static String compress(String term){
+	public static String compress(String term){
 		List<String> parts = getParts(term, '*', '/');
 		String evalString = "";
 		String lettersString = "";
@@ -124,80 +124,16 @@ public class EquationTerm{
 		}
 	}
 
-	public static String formatTerm(String term){
-		List<String> parts = getParts(term, '+', '-');
-		if (parts.size() > 1){
-			Map<String, List<String>> groups = new HashMap<>();
-			for (String part : parts){
-				String v = "D"; // Numbers are located in group 'D'
-				for (int i = 0; i < part.length(); i++){
-					char c = part.charAt(i);
-					if (c >= 'a' && c <= 'z'){
-						v = String.valueOf(c);
-						if (i < part.length()-2 && part.charAt(i+1) == '^'){
-							v = c+"^"+part.charAt(i+2);
-						}
-						break;
-					}
-				}
-
-				List<String> factors = groups.getOrDefault(v, new ArrayList<String>());
-				groups.put(v, factors);
-				factors.add(part);
-			}
-
-			List<String> result = new ArrayList<>();
-			for (Map.Entry<String, List<String>> group : groups.entrySet()){
-				List<String> pieces = new ArrayList<>();
-				for (String part : group.getValue()){
-					pieces.add(compress(part));
-				}
-
-				boolean number = true;
-				String varName = null;
-				for (int i = 0; i < pieces.get(0).length(); i++){
-					char c = pieces.get(0).charAt(i);
-					if ((c >= 'a' && c <= 'z')){
-						number = false;
-						varName = String.valueOf(c);
-						if (i < pieces.get(0).length()-2 && pieces.get(0).charAt(i+1) == '^'){
-							varName = c+"^"+pieces.get(0).charAt(i+2);
-						}
-						break;
-					}
-				}
-				if (number){
-					result.add(pieces.get(0));
-				} else {
-					double sum = 0;
-					for (int i = 0; i < pieces.size(); i++){
-						String piece = pieces.get(i);
-						if (piece.contains("*")){
-							sum += Double.parseDouble(piece.split("\\*")[0]);
-						} else {
-							// TODO 1/x and 1/y
-							// ...
-							sum += 1;
-						}
-					}
-					result.add(sum+"*"+varName);
-				}
-			}
-
-			StringBuilder builder = new StringBuilder();
-			for (int i = 0; i < result.size(); i++){
-				if (i != 0 && !result.get(i).startsWith("-")) builder.append("+");
-				builder.append(result.get(i));
-			}
-			return builder.toString();
-		} else {
-			return parts.get(0).substring(1);
-		}
-	}
-
 	public static List<String> getParts(String expression, char c1, char c2){
 		List<String> output = new ArrayList<>();
 		String currentPart = "";
+		if (expression.charAt(0) == c1){
+			currentPart = String.valueOf(c1);
+			expression = expression.substring(1);
+		} else if (expression.charAt(0) == c2){
+			currentPart = String.valueOf(c2);
+			expression = expression.substring(1);
+		}
 		String before = String.valueOf(c1);
 		int locked = 0;
 		for (int i = 0; i < expression.length(); i++){
@@ -209,7 +145,7 @@ public class EquationTerm{
 						throw new RuntimeException("Missing ')'");
 					}
 				}
-				if (i > 0) output.add(before+currentPart);
+				if (i > 0 || i == expression.length()-1) output.add(before+currentPart);
 				before = String.valueOf(c);
 				currentPart = "";
 			} else {
