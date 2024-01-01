@@ -15,7 +15,7 @@ public class Result{
 		this.value = value;
 	}
 
-	public List<Pair<Double, Double>> getValue(){
+	public List<Pair<Double, Double>> getValues(){
 		return this.value;
 	}
 }

@@ -23,6 +23,7 @@ public class MainApplication extends Application{
 	private static final int WIDTH = 800;
 	private static final int HEIGHT = 600;
 	private static final int FPS = 40;
+	private static final int MAX_INTERSECTION_COUNT = 15;
 
 	private HashMap<KeyCode, Boolean> keys = new HashMap<>();
 	private int frames, fps;
@@ -40,6 +41,8 @@ public class MainApplication extends Application{
 		// Menu
 		MenuBar menuBar = new MenuBar();
 		Menu fileMenu = new Menu("File");
+
+		// Edit menu
 		Menu editMenu = new Menu("Edit");
 		MenuItem editGraphs = new MenuItem("Edit graphs");
 		editGraphs.setOnAction(e -> {
@@ -139,14 +142,41 @@ public class MainApplication extends Application{
 				info.setHeaderText("Intersections found:");
 				List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
 				StringBuilder builder = new StringBuilder();
-				output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+				if (output == null){
+					builder.append("The two equations intersect in at least "+MAX_INTERSECTION_COUNT+" points");
+				} else if (output.size() == 0){
+					builder.append("No intersection");
+				} else {
+					output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+				}
 				info.setContentText(builder.toString());
 				info.showAndWait();
 			});
 		});
 
-		menuBar.getMenus().addAll(fileMenu, editMenu);
+		// Transform menu
+		Menu transformMenu = new Menu("Transform");
+		MenuItem applyTransform = new MenuItem("Apply transformation");
+		/*applyTransform.setOnAction(e -> {
+			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+			alert.setTitle("Apply transformation");
+			GridPane gpane = new GridPane();
+			gpane.setPadding(new Insets(5, 5, 5, 5));
+			gpane.setVgap(5);
+			gpane.setHgap(5);
+			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
+			for (GraphFunction f : this.functions){
+				box.getItems().add(f);
+			}
+			Label xPrime = new Label("x' = ");
+			Label yPrime = new Label("y' = ");
+			TextField xEq = new TextField();
+			TextField yEq = new TextField();
+		});*/
+
+		menuBar.getMenus().addAll(fileMenu, editMenu, transformMenu);
 		editMenu.getItems().addAll(editGraphs, calculate);
+		transformMenu.getItems().add(applyTransform);
 		pane.add(menuBar, 0, 0);
 
 		Canvas canvas = new Canvas(WIDTH, HEIGHT);
@@ -167,9 +197,13 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = abs(x+6)"));
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "5*y^2-6*x*y = -5*x^2+8"));
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = 5*x+2"));
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "(y^2)/9 - (x^2)/4 = -1"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "(y^2)/4 + (x^2)/9 = 1"));
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = x^2"));
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "y = 3*x^2"));
+
+		// Debug
+		//GraphFunction.addFunction(this.functions, this.functions.get(0).transform("x = x'+2", "y = y'+2"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -202,66 +236,24 @@ public class MainApplication extends Application{
 	}
 
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
-		List<Double> output = new ArrayList<>();
+		List<Double> result = new ArrayList<>();
 
-		List<Pair<Double, List<Double>>> pairs1 = new ArrayList<>();
-		List<Pair<Double, List<Double>>> pairs2 = new ArrayList<>();
-		for (double i = -10; i < 10; i += 0.001){
-			pairs1.add(new Pair<>(i, f1.solveForY(i)));
-			pairs2.add(new Pair<>(i, f2.solveForY(i)));
-		}
+		/*for (double i = -10; i < 10; i += 0.001){
+			List<Double> y1 = f1.solveForY(i);
+			List<Double> y2 = f2.solveForY(i);
 
-		for (int i = 0; i < pairs1.size(); i++){
-			Pair<Double, List<Double>> pair1 = pairs1.get(i);
-			Pair<Double, List<Double>> pair2 = pairs2.get(i);
-			for (int j = 0; j < pair1.getValue().size(); j++){
-				for (int k = 0; k < pair2.getValue().size(); k++){
-					double delta = Math.abs(pair1.getValue().get(j)-pair2.getValue().get(k));
-					if (delta < 0.01){
-						Double solution = findPoint(f1, f2, pair1.getKey(), 0.001, 1, j, k);
-						if (solution != null) output.add(solution);
+			for (int j = 0; j < y1.size(); j++){
+				for (int k = 0; k < y2.size(); k++){
+					double delta = Math.abs(y1.get(j)-y2.get(k));
+					if (delta < 0.1){
+						//System.out.format("Possible solution: %s\n", i);
+						result.add(i);
 					}
 				}
 			}
-		}
-
-		List<Double> temp = new ArrayList<>(output.stream().distinct().toList());
-		List<Double> result = new ArrayList<>();
-		for (int i = 0; i < temp.size(); i++){
-			double sol = temp.get(i);
-			double sum = sol;
-			int n = 1;
-			for (int j = i+1; j < temp.size(); j++){
-				double sol2 = temp.get(j);
-				if (Math.abs(sol-sol2) < 0.1){
-					sum += sol2;
-					n++;
-				}
-			}
-			result.add(sum/n);
-			i += n-1;
-		}
+		}*/
 
 		return result;
-	}
-
-	private Double findPoint(GraphFunction f1, GraphFunction f2, double value, double step, int depth, int solIndex1, int solIndex2){
-		double delta1 = Math.abs(f1.solveForY(value-step/2).get(solIndex1)-f2.solveForY(value-step/2).get(solIndex2));
-		double delta2 = Math.abs(f1.solveForY(value+step/2).get(solIndex1)-f2.solveForY(value+step/2).get(solIndex2));	
-
-		if (depth == 25){
-			if (Math.abs(delta1) < 0.0015 && Math.abs(delta2) < 0.0015){ // Must be almost 0
-				return value;	
-			} else return null;
-		}
-
-		if (delta1 < delta2){
-			return findPoint(f1, f2, value-step/2, step/2, depth+1, solIndex1, solIndex2);
-		} else if (delta1 > delta2){
-			return findPoint(f1, f2, value+step/2, step/2, depth+1, solIndex1, solIndex2);
-		} else {
-			return findPoint(f1, f2, value-step/2, step/2, depth+1, solIndex1, solIndex2); // Pick a random way
-		}
 	}
 
 	private void update(GraphicsContext gc){
@@ -323,7 +315,7 @@ public class MainApplication extends Application{
 			for (GraphFunction func : this.functions){
 				gc.setStroke(func.getColor());
 				for (Result rs : func.getResults()){
-					List<Pair<Double, Double>> result = rs.getValue();
+					List<Pair<Double, Double>> result = rs.getValues();
 					for (int i = 0; i < result.size(); i++){
 						Pair<Double, Double> point = result.get(i);
 						if (point.getValue() != null && !point.getValue().isNaN()){
@@ -337,20 +329,26 @@ public class MainApplication extends Application{
 
 				// Connect the bounds of the results if it's a quadratic equation
 				if (func.isQuadratic()){
-					int firstN = -1;
-					int lastN = -1;
-					for (int i = 0; i < func.getResults().get(0).getValue().size(); i++){
-						Double y1 = func.getResults().get(0).getValue().get(i).getValue();
-						Double y2 = func.getResults().get(1).getValue().get(i).getValue();
-						if (y1 != null && firstN == -1){
-							firstN = i;
-						}
-						if (y1 == null && lastN == -1 && firstN != -1){
-							lastN = i-1;
+					for (int i = 0; i < func.getResults().get(0).getValues().size(); i++){
+						Double y1 = func.getResults().get(0).getValues().get(i).getValue();
+						Double y2 = func.getResults().get(1).getValues().get(i).getValue();
+						if (y1 != null && y2 != null && (Math.abs(y1) < 1 || Math.abs(y2) < 1)){
+							if (i < func.getResults().get(0).getValues().size()-1){
+								Double ny1 = func.getResults().get(0).getValues().get(i+1).getValue();
+								Double ny2 = func.getResults().get(1).getValues().get(i+1).getValue();
+								if (ny1 == null && ny2 == null){
+									drawLine(gc, func.getResults().get(0).getValues().get(i), func.getResults().get(1).getValues().get(i));
+								}
+							}
+							if (i > 0){
+								Double py1 = func.getResults().get(0).getValues().get(i-1).getValue();
+								Double py2 = func.getResults().get(1).getValues().get(i-1).getValue();
+								if (py1 == null && py2 == null){
+									drawLine(gc, func.getResults().get(0).getValues().get(i), func.getResults().get(1).getValues().get(i));
+								}
+							}
 						}
 					}
-					drawLine(gc, func.getResults().get(0).getValue().get(firstN), func.getResults().get(1).getValue().get(firstN));
-					drawLine(gc, func.getResults().get(0).getValue().get(lastN), func.getResults().get(1).getValue().get(lastN));
 				}
 			}
 		}
@@ -362,6 +360,10 @@ public class MainApplication extends Application{
 	}
 
 	public static void main(String[] args){
-		launch(args);
+		//launch(args);
+
+		Equation eq = new Equation("y^2+(y+3)*5+3-2*x=8-2*(1-3*(x+1))+x^2");
+		//Equation eq = new Equation("x+2*x-5*8=y*2-3*y^2+1");
+		System.exit(0);
 	}
 }

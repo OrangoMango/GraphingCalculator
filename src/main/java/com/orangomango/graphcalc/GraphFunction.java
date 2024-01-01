@@ -13,23 +13,50 @@ public class GraphFunction{
 	private String expression = null;
 	private String a, b;
 	private boolean quadratic = false;
+	private String originalY = null;
 
 	public GraphFunction(Color color, String f){
 		this.color = color;
-		this.expression = f.replace(" ", ""); // TODO
-		this.func = Evaluator.buildFunction(this.expression.split("=")[1].trim(), "x", null);
 
 		// Get the coefficients
-		String[] parts = this.expression.split("=")[0].replace("-", "+-").split("\\+");
+		String[] parts = f.replace(" ", "").split("=")[0].replace("-", "+-").replace("/", "*1/").split("\\+");
+		String otherside = "";
+		String firstSide = "";
 		for (String p : parts){
-			if (p.contains("y^2")){
+			if (p.isBlank()) continue;
+			if (p.contains("(y^2)") || p.contains("y^2")){
 				this.quadratic = true;
-				this.a = p.replace("*y^2", "").replace("y^2*", "").replace("y^2", "");
+				this.a = p.contains("(y^2)") ? p.replace("(y^2)", "") : p.replace("y^2", "");
+				firstSide += "+"+p;
 			} else if (p.contains("y")){
-				this.b = p.replace("*y", "").replace("y*", "").replace("y", "");
+				this.b = p.replace("y", "");
+				firstSide += "+"+p;
+			} else {
+				if (p.startsWith("-")){
+					otherside += "+"+p.substring(1);
+				} else if (p.startsWith("+")){
+					otherside += "-"+p.substring(1);
+				} else {
+					otherside += "-"+p;
+				}
 			}
 		}
-		System.out.format("A: %s B: %s\n", this.a, this.b);
+
+		if (this.a != null){
+			if (this.a.startsWith("*") || this.a.startsWith("/")) this.a = this.a.substring(1);
+			if (this.a.endsWith("*") || this.a.endsWith("/")) this.a = this.a.substring(0, this.a.length()-1);
+		}
+		if (this.b != null){
+			if (this.b.startsWith("*") || this.b.startsWith("/")) this.b = this.b.substring(1);
+			if (this.b.endsWith("*") || this.b.endsWith("/")) this.b = this.b.substring(0, this.b.length()-1);
+		}
+
+		this.expression = firstSide.substring(1).replace("*1/", "/")+"="+f.split("=")[1].trim()+otherside.replace("*1/", "/");
+		this.expression = this.expression.replace("=+", "=");
+
+		System.out.format("A: %s B: %s EQ: %s\n", this.a, this.b, this.expression);
+
+		this.func = Evaluator.buildFunction(this.expression.split("=")[1], "x", null);
 	}
 
 	public static void addFunction(List<GraphFunction> list, GraphFunction f){
@@ -39,6 +66,16 @@ public class GraphFunction{
 
 	public static void removeFunction(List<GraphFunction> list, GraphFunction f){
 		list.remove(f);
+	}
+
+	public GraphFunction transform(String xEq, String yEq){
+		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "x");
+		yEq = yEq.replace(" ", "").split("=")[1].replace("y'", "y");
+		String eq = this.expression.replace("x", "("+xEq+")");
+		System.out.format("Transformed equation: %s\n", eq);
+		GraphFunction f = new GraphFunction(this.color, eq);
+		f.originalY = yEq;
+		return f;
 	}
 
 	public void buildInterval(double from, double to, double step, double minY, double maxY){
@@ -78,15 +115,23 @@ public class GraphFunction{
 		List<Double> output = new ArrayList<>();
 
 		if (a == 0){
-			output.add(-c/b);
+			output.add(calculateY(-c/b));
 		} else {
 			double y1 = (-b+Math.sqrt(b*b-4*a*c))/(2*a);
 			double y2 = (-b-Math.sqrt(b*b-4*a*c))/(2*a);
-			output.add(y1);
-			output.add(y2);
+			output.add(calculateY(y1));
+			output.add(calculateY(y2));
 		}
 
 		return output;
+	}
+
+	private double calculateY(double y){
+		if (this.originalY == null){
+			return y;
+		} else {
+			return y; // TODO
+		}
 	}
 
 	public Function<Double, Double> getDefinition(){
