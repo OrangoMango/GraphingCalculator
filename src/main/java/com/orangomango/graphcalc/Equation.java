@@ -1,6 +1,7 @@
 package com.orangomango.graphcalc;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class Equation{
 	private String equation;
@@ -26,18 +27,83 @@ public class Equation{
 		this.terms = temp;
 
 		// Move all the terms on one side
-		for (EquationTerm term : this.terms){
-			if (!term.getLeft()){
-				term.moveLeft();
-			}
-		}
-		String eq = "";
-		for (EquationTerm term : this.terms){
-			eq += term.getTerm();
-		}
+		moveAllTerms(term -> !term.getLeft(), true);
 
 		// Final step
-		this.equation = format(beautify(eq))+"=0";
+		this.equation = format(beautify(this.equation.split("=")[0]))+"=0";
+	}
+
+	public void moveAllTerms(Predicate<EquationTerm> condition, boolean left){
+		for (EquationTerm term : this.terms){
+			if (condition.test(term)){
+				term.move(left);
+			}
+		}
+
+		StringBuilder result = new StringBuilder();
+		int count = 0;
+		for (EquationTerm term : this.terms){
+			if (term.getLeft()){
+				result.append(term.getTerm());
+				count++;
+			}
+		}
+		if (count == 0) result.append("0");
+		count = 0;
+		result.append("=");
+		for (EquationTerm term : this.terms){
+			if (!term.getLeft()){
+				result.append(term.getTerm());
+				count++;
+			}
+		}
+		if (count == 0) result.append("0");
+		this.equation = result.toString();
+	}
+
+	public List<Double> solve(String varName, Map<String, Double> params){
+		String eq = this.equation.split("=")[0];
+		if (params != null){
+			for (Map.Entry<String, Double> entry : params.entrySet()){
+				eq = eq.replace(entry.getKey(), "("+entry.getValue()+")");
+			}
+		}
+		eq = format(eq);
+
+		double[] cf = getCoefficients(eq, varName);
+		List<Double> output = new ArrayList<>();
+
+		if (cf[0] == 0){
+			output.add(-cf[2]/cf[1]);
+		} else {
+			double delta = cf[1]*cf[1]-4*cf[0]*cf[2];
+			double s1 = (-cf[1]+Math.sqrt(delta))/(2*cf[0]);
+			double s2 = (-cf[1]-Math.sqrt(delta))/(2*cf[0]);
+			output.add(s1);
+			output.add(s2);
+		}
+
+		return output;
+	}
+
+	public static double[] getCoefficients(String eq, String varName){
+		List<String> parts = EquationTerm.getParts(eq.split("=")[0], '+', '-');
+
+		double a = 0;
+		double b = 0;
+		double c = 0;
+		for (int i = 0; i < parts.size(); i++){
+			String part = parts.get(i);
+			if (!part.contains("*"+varName)){
+				c = Double.parseDouble(part);
+			} else if (part.contains("*"+varName+"^2")){
+				a = Double.parseDouble(part.split("\\*")[0]);
+			} else if (part.contains("*"+varName)){
+				b = Double.parseDouble(part.split("\\*")[0]);
+			}
+		}
+
+		return new double[]{a, b, c};
 	}
 
 	private static String beautify(String equation){
@@ -92,7 +158,8 @@ public class Equation{
 					}
 				}
 				if (group.getKey().equals("D")){
-					result.add(Double.toString(pieces.stream().mapToDouble(Double::parseDouble).sum()));
+					double sum = pieces.stream().mapToDouble(Double::parseDouble).sum();
+					result.add(Double.toString(sum));
 				} else {
 					double sum = 0;
 					for (int i = 0; i < pieces.size(); i++){
@@ -102,7 +169,11 @@ public class Equation{
 						} else {
 							// TODO 1/x and 1/y, and a^x
 							// ...
-							sum += 1;
+							String p = piece.replace(varName, "*"+varName).replace("-*"+varName, "-1*"+varName);
+							if (p.startsWith("(") && p.endsWith(")")){
+								p = p.substring(1, p.length()-1);
+							}
+							sum += p.split("\\*")[0].equals("") ? 1 : Double.parseDouble(p.split("\\*")[0]);
 						}
 					}
 					result.add(sum+"*"+varName);

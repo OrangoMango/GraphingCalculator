@@ -203,7 +203,7 @@ public class MainApplication extends Application{
 		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "y = 3*x^2"));
 
 		// Debug
-		GraphFunction.addFunction(this.functions, this.functions.get(0).transform("x = x'+2", "y = y'+2"));
+		//GraphFunction.addFunction(this.functions, this.functions.get(0).transform("x = x'+2", "y = y'+2"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -362,8 +362,13 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		launch(args);
 
-		//Equation equation = new Equation("(x+2)*(x+5) = 1");
-		//System.out.println(equation.getEquation());
-		//System.exit(0);
+		/*Map<String, Double> params = new HashMap<>();
+		params.put("a", 6.0);
+		Equation equation = new Equation("-x+x^2=a");
+		System.out.println(equation.getEquation());
+
+		System.out.println(equation.solve("x", params));
+
+		System.exit(0);*/
 	}
 }
