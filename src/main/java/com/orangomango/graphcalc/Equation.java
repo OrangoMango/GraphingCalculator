@@ -9,6 +9,7 @@ public class Equation{
 
 	public Equation(String e){
 		this.equation = e.replace(" ", "").replace("-(", "-1*(");
+		formatExponents();
 
 		String leftPart = this.equation.split("=")[0];
 		String rightPart = this.equation.split("=")[1];
@@ -31,6 +32,50 @@ public class Equation{
 
 		// Final step
 		this.equation = format(beautify(this.equation.split("=")[0]))+"=0";
+	}
+
+	private void formatExponents(){
+		while (this.equation.contains(")^")){
+			StringBuilder result = new StringBuilder();
+			boolean readExp = false;
+			String exp = "";
+			for (int i = 0; i < this.equation.length(); i++){
+				char c = this.equation.charAt(i);
+				if (c == '^' && this.equation.charAt(i-1) == ')'){
+					readExp = true;
+					exp = "";
+				} else {
+					if (readExp && (c >= '0' && c <= '9')){
+						exp += c;
+					} else {
+						if (readExp){
+							int count = 0;
+							boolean start = false;
+							StringBuilder block = new StringBuilder();
+							for (int j = i; j >= 0; j--){
+								char c2 = this.equation.charAt(j);
+								if (c2 == ')'){
+									count++;
+									start = true;
+								} else if (c2 == '('){
+									count--;
+								}
+								if (start){
+									block.append(c2);
+									if (count == 0){
+										result.append(("*"+block.reverse().toString()).repeat(Integer.parseInt(exp)-1));
+										break;
+									}
+								}
+							}
+							readExp = false;
+						}
+						result.append(c);
+					}
+				}
+			}
+			this.equation = result.toString();
+		}
 	}
 
 	public void moveAllTerms(Predicate<EquationTerm> condition, boolean left){

@@ -22,7 +22,6 @@ public class GraphFunction{
 		this.equation.moveAllTerms(term -> !term.getTerm().contains("y"), false);
 		this.func = Evaluator.buildFunction(this.equation.getEquation().split("=")[1], "x", null);
 		this.equation.moveAllTerms(term -> !term.getLeft(), true);
-		System.out.println(this.equation.getEquation());
 	}
 
 	public static void addFunction(List<GraphFunction> list, GraphFunction f){
@@ -34,16 +33,13 @@ public class GraphFunction{
 		list.remove(f);
 	}
 
-	public GraphFunction transform(String xEq, String yEq){
-		/*xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "x");
+	public GraphFunction transform(Color color, String xEq, String yEq){
+		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "x");
 		yEq = yEq.replace(" ", "").split("=")[1].replace("y'", "y");
-		String eq = "((y+2)*(y+2))/4=1-((x+2)*(x+2))/9"; //this.expression.replace("x", "("+xEq+")").replace("y", "("+yEq+")");
-		System.out.println("eq: "+eq);
+		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")");
 		Equation equation = new Equation(eq);
-		System.out.format("Transformed equation: %s\n", equation.getEquation());
-		GraphFunction f = new GraphFunction(this.color, equation.getEquation());
-		return f;*/
-		return null;
+		GraphFunction f = new GraphFunction(color, equation.getEquation());
+		return f;
 	}
 
 	public void buildInterval(double from, double to, double step, double minY, double maxY){
@@ -77,5 +73,10 @@ public class GraphFunction{
 
 	public boolean isQuadratic(){
 		return this.quadratic;
+	}
+
+	@Override
+	public String toString(){
+		return this.equation.getEquation();
 	}
 }

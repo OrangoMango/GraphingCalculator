@@ -197,13 +197,11 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "(y^2)/9 - (x^2)/4 = -1"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "(y^2)/4 + (x^2)/9 = 1"));
-		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "y = x^2"));
-		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.RED, "y = 3*x^2"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
 
-		// Debug
-		//GraphFunction.addFunction(this.functions, this.functions.get(0).transform("x = x'+2", "y = y'+2"));
+		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.RED, "x = x'+2", "y = y'+2"));
+		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.CYAN, "x = x'-2", "y = 2*y'"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -361,14 +359,5 @@ public class MainApplication extends Application{
 
 	public static void main(String[] args){
 		launch(args);
-
-		/*Map<String, Double> params = new HashMap<>();
-		params.put("a", 6.0);
-		Equation equation = new Equation("-x+x^2=a");
-		System.out.println(equation.getEquation());
-
-		System.out.println(equation.solve("x", params));
-
-		System.exit(0);*/
 	}
 }
