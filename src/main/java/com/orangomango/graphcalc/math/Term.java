@@ -14,6 +14,17 @@ public class Term extends EquationPiece{
 	}
 
 	@Override
+	public String getString(boolean pref){
+		StringBuilder builder = new StringBuilder();
+		if (pref) builder.append(this.prefix);
+		for (int i = 0; i < this.pieces.size(); i++){
+			EquationPiece piece = this.pieces.get(i);
+			builder.append(piece.getString(i > 0));
+		}
+		return builder.toString();
+	}
+
+	@Override
 	public String print(int depth){
 		StringBuilder builder = new StringBuilder();
 		builder.append("\t".repeat(depth)+"Term ["+(this.prefix == null ? "" : this.prefix)+"]\n");

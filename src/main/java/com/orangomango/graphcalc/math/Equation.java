@@ -162,6 +162,7 @@ public class Equation{
 		this.equation.group("x");
 
 		System.out.println(this.equation);
+		System.out.println(this.equation.getString(true));
 	}
 
 	public String getEquation(){

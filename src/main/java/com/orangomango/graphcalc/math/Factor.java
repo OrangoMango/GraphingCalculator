@@ -57,6 +57,22 @@ public class Factor extends EquationPiece{
 	}
 
 	@Override
+	public String getString(boolean pref){
+		StringBuilder builder = new StringBuilder();
+		if (pref) builder.append(this.prefix);
+		if (this.pieces.size() == 0){
+			builder.append(this.content);
+		} else {
+			builder.append(this.pieces.get(0).getString(true));
+		}
+		if (this.exponent != null){
+			builder.append("^");
+			builder.append(this.exponent.getString(true));
+		}
+		return builder.toString();
+	}
+
+	@Override
 	public String print(int depth){
 		StringBuilder builder = new StringBuilder();
 		if (this.pieces.size() == 0){

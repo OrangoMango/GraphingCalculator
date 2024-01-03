@@ -109,9 +109,9 @@ public class Expression extends EquationPiece{
 					}
 				}
 			}
-
-			applyToChildren(expr -> expr.reduce());
 		}
+
+		applyToChildren(expr -> expr.reduce());
 
 		for (EquationPiece piece : toRemove){
 			this.pieces.remove(piece);
@@ -136,6 +136,18 @@ public class Expression extends EquationPiece{
 				}
 			}
 		}
+	}
+
+	@Override
+	public String getString(boolean pref){
+		StringBuilder builder = new StringBuilder();
+		if (this.parent != null) builder.append("(");
+		for (int i = 0; i < this.pieces.size(); i++){
+			EquationPiece piece = this.pieces.get(i);
+			builder.append(piece.getString(i > 0));
+		}
+		if (this.parent != null) builder.append(")");
+		return builder.toString();
 	}
 
 	@Override
