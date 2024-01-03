@@ -19,6 +19,8 @@ import javafx.util.Callback;
 
 import java.util.*;
 
+import com.orangomango.graphcalc.math.*;
+
 public class MainApplication extends Application{
 	private static final int WIDTH = 800;
 	private static final int HEIGHT = 600;
@@ -197,10 +199,9 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "(y^2)/4 + (x^2)/9 = 1"));
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
-
-		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.RED, "x = x'+2", "y = y'+2"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2+y^2=9"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2/4+y^2=1"));
+		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
 		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.CYAN, "x = x'-2", "y = 2*y'"));
 
 		AnimationTimer timer = new AnimationTimer(){
@@ -358,6 +359,10 @@ public class MainApplication extends Application{
 	}
 
 	public static void main(String[] args){
-		launch(args);
+		//launch(args);
+
+		Equation eq = new Equation("5*(2+3)=0");
+
+		System.exit(0);
 	}
 }

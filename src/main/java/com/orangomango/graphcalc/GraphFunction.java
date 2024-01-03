@@ -6,6 +6,8 @@ import javafx.util.Pair;
 import java.util.*;
 import java.util.function.Function;
 
+import com.orangomango.graphcalc.math.*;
+
 public class GraphFunction{
 	private Function<Double, Double> func;
 	private List<Result> results = new ArrayList<>();
@@ -18,10 +20,10 @@ public class GraphFunction{
 		this.color = color;
 		this.equation = new Equation(f);
 		this.quadratic = this.equation.getEquation().contains("y^2");
-		this.equation.moveAllTerms(term -> term.getTerm().contains("y"), true);
-		this.equation.moveAllTerms(term -> !term.getTerm().contains("y"), false);
-		this.func = Evaluator.buildFunction(this.equation.getEquation().split("=")[1], "x", null);
-		this.equation.moveAllTerms(term -> !term.getLeft(), true);
+		//this.equation.moveAllTerms(term -> term.getTerm().contains("y"), true);
+		//this.equation.moveAllTerms(term -> !term.getTerm().contains("y"), false);
+		//this.func = Evaluator.buildFunction(this.equation.getEquation().split("=")[1], "x", null);
+		//this.equation.moveAllTerms(term -> !term.getLeft(), true);
 	}
 
 	public static void addFunction(List<GraphFunction> list, GraphFunction f){
@@ -34,9 +36,11 @@ public class GraphFunction{
 	}
 
 	public GraphFunction transform(Color color, String xEq, String yEq){
-		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "x");
-		yEq = yEq.replace(" ", "").split("=")[1].replace("y'", "y");
-		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")");
+		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "#").replace("y'", "@");
+		yEq = yEq.replace(" ", "").split("=")[1].replace("x'", "#").replace("y'", "@");
+		System.out.println("From: "+this.equation.getEquation());
+		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
+		System.out.println("eq: "+eq);
 		Equation equation = new Equation(eq);
 		GraphFunction f = new GraphFunction(color, equation.getEquation());
 		return f;
@@ -48,7 +52,7 @@ public class GraphFunction{
 		for (double i = from; i <= to; i += step){
 			Map<String, Double> params = new HashMap<>();
 			params.put("x", i);
-			List<Double> output = this.equation.solve("y", params);
+			List<Double> output = null; //this.equation.solve("y", params);
 			values1.add(new Pair<Double, Double>(i, output.get(0) > minY && output.get(0) < maxY ? output.get(0) : null));
 			if (output.size() > 1) values2.add(new Pair<Double, Double>(i, output.get(1) > minY && output.get(1) < maxY ? output.get(1) : null));
 		}
