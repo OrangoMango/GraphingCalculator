@@ -13,12 +13,24 @@ public class Factor extends EquationPiece{
 		this.content = text;
 	}
 
+	public String getContent(){
+		return this.content;
+	}
+
 	public void setArgument(Expression text){
 		this.argument = text;
 	}
 
+	public Expression getArgument(){
+		return this.argument;
+	}
+
 	public void setExponent(Factor f){
 		this.exponent = f;
+	}
+
+	public Factor getExponent(){
+		return this.exponent;
 	}
 
 	public Expression getExpression(){

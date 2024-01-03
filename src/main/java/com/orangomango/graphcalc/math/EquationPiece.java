@@ -5,8 +5,8 @@ import java.util.*;
 public abstract class EquationPiece{
 	protected boolean left;
 	protected List<EquationPiece> pieces = new ArrayList<>();
-	private EquationPiece parent;
-	public String prefix;
+	protected EquationPiece parent;
+	public String prefix = "+";
 
 	public EquationPiece(EquationPiece parent, boolean left){
 		this.parent = parent;
@@ -19,6 +19,10 @@ public abstract class EquationPiece{
 
 	public EquationPiece getParent(){
 		return this.parent;
+	}
+
+	public void setParent(EquationPiece p){
+		this.parent = p;
 	}
 
 	public void moveAll(boolean left){

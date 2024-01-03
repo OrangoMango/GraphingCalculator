@@ -150,7 +150,16 @@ public class Equation{
 		leftPart.add(rightPart);
 		this.equation = leftPart;
 
-		this.equation.reduce();
+		// Remove the parenthesis
+		while (this.equation.canBeReduced()){
+			this.equation.reduce();
+		}
+
+		// Rewrite the equation
+		this.equation.rewrite();
+
+		// Group the common factors
+		this.equation.group("x");
 
 		System.out.println(this.equation);
 	}
