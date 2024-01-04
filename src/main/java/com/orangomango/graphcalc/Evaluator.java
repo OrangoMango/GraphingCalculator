@@ -3,24 +3,15 @@ package com.orangomango.graphcalc;
 import java.util.*;
 import java.util.function.Function;
 
+import static com.orangomango.graphcalc.math.Equation.formatExponential;
+
 public class Evaluator{
 	private String expression;
 	private int pos;
 	private Map<String, Double> variables;
 
 	public Evaluator(String input, Map<String, Double> vars){
-		StringBuilder builder = new StringBuilder();
-		for (int i = 0; i < input.length(); i++){
-			char c = input.charAt(i);
-			if (c == 'E' && i > 0){
-				char prev = input.charAt(i-1);
-				if (prev >= '0' && prev <= '9'){
-					c = '^';
-				}
-			}
-			builder.append(c);
-		}
-		this.expression = builder.toString();
+		this.expression = formatExponential(input.replace(" ", ""));
 		this.variables = vars;
 	}
 
@@ -32,25 +23,6 @@ public class Evaluator{
 			return eval.parse();
 		};
 	}
-
-	/*private static String format(String text){
-		StringBuilder output = new StringBuilder();
-		for (int i = 0; i < text.length(); i++){
-			char c = text.charAt(i);
-			if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) && i > 0){
-				char prev = text.charAt(i-1);
-				if (prev != '+' && prev != '-' && prev != '*' && prev != '/' && prev != '^'){
-					output.append("*").append(c);
-				} else {
-					output.append(c);
-				}
-			} else {
-				output.append(c);
-			}
-		}
-
-		return output.toString();
-	}*/
 
 	private char nextChar(){
 		return this.pos < this.expression.length() ? this.expression.charAt(this.pos++) : '\0';

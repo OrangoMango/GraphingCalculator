@@ -134,7 +134,7 @@ public class Equation{
 	private Expression equation;
 
 	public Equation(String e){
-		e = e.replace(" ", "");
+		e = formatExponential(e.replace(" ", ""));
 
 		Parser parser = new Parser(e.split("=")[0], true);
 		Expression leftPart = parser.parse();
@@ -151,6 +151,7 @@ public class Equation{
 		this.equation = leftPart;
 
 		// Remove the parenthesis
+		this.equation.removeMinus();
 		while (this.equation.canBeReduced()){
 			this.equation.reduce();
 		}
@@ -159,11 +160,29 @@ public class Equation{
 		this.equation.rewrite();
 
 		// Group the common factors
-		this.equation.group("x");
-		this.equation.group("x^2");
+		this.equation.group("x", "*");
+		this.equation.group("x", "/");
+		this.equation.group("x^2", "*");
+		this.equation.group("x^2", "/");
 
 		System.out.println(this.equation);
-		System.out.println(this.equation.getString(true));
+		System.out.println(this.equation.getString(true)+"=0");
+	}
+
+	public static String formatExponential(String input){
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < input.length(); i++){
+			char c = input.charAt(i);
+			if (c == 'E' && i > 0){
+				char prev = input.charAt(i-1);
+				if (prev >= '0' && prev <= '9'){
+					c = '^';
+				}
+			}
+			builder.append(c);
+		}
+
+		return builder.toString();
 	}
 
 	public String getEquation(){

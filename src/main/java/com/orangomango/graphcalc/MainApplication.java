@@ -361,7 +361,7 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		//launch(args);
 
-		Equation eq = new Equation("2*x+(2*x+3*x)*x+x=0");
+		Equation eq = new Equation("5/x+3*x-3/x+8*x^2-2*x-5*x^2=0");
 
 		System.exit(0);
 	}

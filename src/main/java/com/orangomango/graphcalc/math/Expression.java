@@ -2,6 +2,7 @@ package com.orangomango.graphcalc.math;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class Expression extends EquationPiece{
 	public Expression(EquationPiece parent, boolean left){
@@ -36,6 +37,7 @@ public class Expression extends EquationPiece{
 	}
 
 	public void rewrite(){
+		// Rewrite with exponents, x*x becomes x^2
 		for (EquationPiece piece : this.pieces){
 			Map<String, Integer> count = new HashMap<>();
 			for (EquationPiece p : piece.getChildren()){
@@ -68,13 +70,54 @@ public class Expression extends EquationPiece{
 			}
 		}
 
+		for (EquationPiece piece : this.pieces){
+			if (piece.getChildren().size() == 1){
+				Factor f = (Factor)piece.getChildren().get(0);
+				// Remove factors that have content '0'
+				if (f.getContent().equals("0")){
+					piece.getChildren().remove(f);
+				}
+			} else {
+				List<EquationPiece> toRemove = new ArrayList<>();
+				for (EquationPiece p : piece.getChildren()){
+					// Remove factors that have a term-index > 0 and content = '1'
+					if (((Factor)p).getContent().equals("1") && (p.prefix.equals("*") || p.prefix.equals("/"))){
+						toRemove.add(p);
+					}
+				}
+				for (EquationPiece p : toRemove){
+					piece.getChildren().remove(p);
+				}
+			}
+		}
+
+		// Remove terms that have no factors
+		List<EquationPiece> toRemove = new ArrayList<>();
+		for (EquationPiece piece : this.pieces){
+			if (piece.getChildren().size() == 0){
+				toRemove.add(piece);
+			}
+		}
+		for (EquationPiece p : toRemove){
+			this.pieces.remove(p);
+		}
+
+		// Rewrite negative terms where the first factor is negative
+		for (EquationPiece piece : this.pieces){
+			if (piece.prefix.equals("-") && piece.getChildren().get(0).prefix.equals("-")){
+				piece.prefix = "+";
+				piece.getChildren().get(0).prefix = "+";
+			}
+		}
+
 		applyToChildren(expr -> expr.rewrite());
 	}
 
-	public void group(String factorName){
+	public void group(String factorName, String prefix){
 		List<EquationPiece> common = new ArrayList<>();
+		Predicate<EquationPiece> acceptable = c -> c.getString(true).substring(1).equals(factorName) && (((c.prefix.equals("+") || c.prefix.equals("-")) && prefix.equals("*")) || c.prefix.equals(prefix));
 		for (EquationPiece p : this.pieces){
-			if (p.getChildren().stream().map(c -> c.getString(true).substring(1)).filter(c -> c.equals(factorName)).findAny().isPresent()){
+			if (p.getChildren().stream().filter(acceptable).findAny().isPresent()){
 				common.add(p);
 			}
 		}
@@ -82,7 +125,7 @@ public class Expression extends EquationPiece{
 		Term newTerm = new Term(this.parent, this.left);
 		Factor commonFactor = new Factor(newTerm, this.left);
 		commonFactor.setContent(factorName);
-		commonFactor.prefix = "*";
+		commonFactor.prefix = prefix;
 		Factor coef = new Factor(newTerm, this.left);
 		Expression exp = new Expression(coef, this.left);
 		newTerm.getChildren().add(coef);
@@ -92,9 +135,8 @@ public class Expression extends EquationPiece{
 			Term nt = new Term(exp, this.left);
 			nt.prefix = p.prefix;
 			for (EquationPiece f : p.getChildren()){
-				Factor factor = (Factor)f;
-				if (!factor.getString(true).substring(1).equals(factorName)){
-					nt.getChildren().add(factor);
+				if (!acceptable.test(f)){
+					nt.getChildren().add(f);
 				}
 				if (nt.getChildren().size() == 0){
 					Factor c1 = new Factor(nt, this.left);
@@ -107,7 +149,7 @@ public class Expression extends EquationPiece{
 		}
 		this.pieces.add(newTerm);
 
-		applyToChildren(expr -> expr.group(factorName));
+		applyToChildren(expr -> expr.group(factorName, prefix));
 	}
 
 	public void reduce(){
@@ -131,7 +173,7 @@ public class Expression extends EquationPiece{
 				if (toMultiply != null && multiplied != null){
 					toMultiply.multiply(multiplied, piece.getChildren().indexOf(toMultiply) < piece.getChildren().indexOf(multiplied));
 					piece.getChildren().remove(multiplied);
-					if (piece.getChildren().size() == 1 && piece.prefix.equals("+")){ // There is only 1 expression now
+					if (piece.getChildren().size() == 1){ // There is only 1 expression now
 						Expression exp = ((Factor)piece.getChildren().get(0)).getExpression();
 						toRemove.add(piece);
 						for (EquationPiece p : exp.getChildren()){
@@ -148,6 +190,36 @@ public class Expression extends EquationPiece{
 		for (EquationPiece piece : toRemove){
 			this.pieces.remove(piece);
 		}
+	}
+
+	public void removeMinus(){
+		final int size = this.pieces.size();
+		for (int i = 0; i < size; i++){
+			EquationPiece piece = this.pieces.get(i);
+			EquationPiece toRemove = null;
+			for (EquationPiece p : piece.getChildren()){
+				Factor f = (Factor)p;
+				if (f.getExpression() != null && f.prefix.equals("-")){
+					f.prefix = "+";
+					for (EquationPiece t : f.getExpression().getChildren()){
+						((Term)t).changeSign();
+					}
+
+					if (piece.getChildren().size() == 1){
+						for (EquationPiece t : f.getExpression().getChildren()){
+							t.setParent(this);
+							this.pieces.add(t);
+						}
+						toRemove = piece;
+					}
+				}
+			}
+			if (toRemove != null){
+				this.pieces.remove(toRemove);
+			}
+		}
+
+		applyToChildren(expr -> expr.removeMinus());
 	}
 
 	private void applyToChildren(Consumer<Expression> consumer){

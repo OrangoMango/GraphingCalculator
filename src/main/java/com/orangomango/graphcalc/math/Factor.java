@@ -17,9 +17,14 @@ public class Factor extends EquationPiece{
 			for (int i = 0; i < expression.getChildren().size(); i++){
 				EquationPiece p = expression.getChildren().get(i);
 				if (append){
-					p.getChildren().add(i == 0 ? factor : factor.copy(p));
+					p.getChildren().add(factor.copy(p));
 				} else {
-					p.getChildren().add(0, i == 0 ? factor : factor.copy(p));
+					EquationPiece newFactor = factor.copy(p);
+					if (p.getChildren().get(0).prefix.equals("-")){
+						newFactor.prefix = factor.prefix.equals("-") ? "+" : "-";
+					}
+					p.getChildren().get(0).prefix = this.prefix;
+					p.getChildren().add(0, newFactor);
 				}
 			}
 		}
@@ -66,7 +71,7 @@ public class Factor extends EquationPiece{
 				builder.append(this.exponent.print(depth+1));
 			}
 		} else {
-			builder.append(this.pieces.get(0).print(depth));
+			builder.append("\t".repeat(depth)+"["+(this.prefix == null ? "" : this.prefix)+"]:\n"+this.pieces.get(0).print(depth));
 		}
 
 		return builder.toString();
