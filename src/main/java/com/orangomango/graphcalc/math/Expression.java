@@ -36,13 +36,45 @@ public class Expression extends EquationPiece{
 	}
 
 	public void rewrite(){
+		for (EquationPiece piece : this.pieces){
+			Map<String, Integer> count = new HashMap<>();
+			for (EquationPiece p : piece.getChildren()){
+				String disp = p.getString(true);
+				count.put(disp, count.getOrDefault(disp, 0)+1);
+			}
+			for (Map.Entry<String, Integer> entry : count.entrySet()){
+				if (entry.getValue() > 1){
+					int rmCount = 0;
+					List<EquationPiece> toRemove = new ArrayList<>();
+					EquationPiece remaining = null;
+					for (EquationPiece p : piece.getChildren()){
+						if (p.getString(true).equals(entry.getKey())){
+							if (rmCount < entry.getValue()-1){
+								toRemove.add(p);
+								rmCount++;
+							} else {
+								remaining = p;
+							}
+						}
+					}
+					for (EquationPiece p : toRemove){
+						piece.getChildren().remove(p);
+					}
+					Factor factor = (Factor)remaining;
+					Factor exp = new Factor(factor, this.left);
+					exp.setContent(Integer.toString(entry.getValue()));
+					factor.setExponent(exp);
+				}
+			}
+		}
 
+		applyToChildren(expr -> expr.rewrite());
 	}
 
 	public void group(String factorName){
 		List<EquationPiece> common = new ArrayList<>();
 		for (EquationPiece p : this.pieces){
-			if (p.getChildren().stream().map(c -> ((Factor)c).getContent()).filter(c -> c.equals(factorName)).findAny().isPresent()){
+			if (p.getChildren().stream().map(c -> c.getString(true).substring(1)).filter(c -> c.equals(factorName)).findAny().isPresent()){
 				common.add(p);
 			}
 		}
@@ -61,7 +93,7 @@ public class Expression extends EquationPiece{
 			nt.prefix = p.prefix;
 			for (EquationPiece f : p.getChildren()){
 				Factor factor = (Factor)f;
-				if (!factor.getContent().equals(factorName)){
+				if (!factor.getString(true).substring(1).equals(factorName)){
 					nt.getChildren().add(factor);
 				}
 				if (nt.getChildren().size() == 0){
@@ -136,6 +168,15 @@ public class Expression extends EquationPiece{
 				}
 			}
 		}
+	}
+
+	@Override
+	public EquationPiece copy(EquationPiece parent){
+		Expression exp = new Expression(parent, this.left);
+		for (EquationPiece piece : this.pieces){
+			exp.getChildren().add(piece.copy(exp));
+		}
+		return exp;
 	}
 
 	@Override

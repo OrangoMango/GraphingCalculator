@@ -14,9 +14,19 @@ public class Term extends EquationPiece{
 	}
 
 	@Override
+	public EquationPiece copy(EquationPiece parent){
+		Term term = new Term(parent, this.left);
+		term.prefix = this.prefix;
+		for (EquationPiece piece : this.pieces){
+			term.getChildren().add(piece.copy(term));
+		}
+		return term;
+	}
+
+	@Override
 	public String getString(boolean pref){
 		StringBuilder builder = new StringBuilder();
-		if (pref) builder.append(this.prefix);
+		if (pref || !this.prefix.equals("+")) builder.append(this.prefix);
 		for (int i = 0; i < this.pieces.size(); i++){
 			EquationPiece piece = this.pieces.get(i);
 			builder.append(piece.getString(i > 0));

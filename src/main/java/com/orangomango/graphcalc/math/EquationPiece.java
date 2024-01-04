@@ -32,6 +32,7 @@ public abstract class EquationPiece{
 		}
 	}
 
+	public abstract EquationPiece copy(EquationPiece parent);
 	public abstract String getString(boolean pref);
 	public abstract String print(int depth);
 

@@ -160,6 +160,7 @@ public class Equation{
 
 		// Group the common factors
 		this.equation.group("x");
+		this.equation.group("x^2");
 
 		System.out.println(this.equation);
 		System.out.println(this.equation.getString(true));
