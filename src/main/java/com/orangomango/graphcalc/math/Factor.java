@@ -30,11 +30,36 @@ public class Factor extends EquationPiece{
 		}
 	}
 
+	// TODO: Rewrite
+	private static <T> boolean checkEquals(T piece1, T piece2){
+		if (!(piece1 == null && piece2 == null)){
+			if (piece1 != null && piece2 != null){
+				return piece1.equals(piece2);
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	@Override
+	public boolean equals(Object other){
+		if (other instanceof Factor f){
+			if (!checkEquals(getExponent(), f.getExponent())) return false;
+			if (!checkEquals(getArgument(), f.getArgument())) return false;
+			if (!checkEquals(getExpression(), f.getExpression())) return false;
+			if (!checkEquals(getContent(), f.getContent())) return false;
+			return true;
+		} else return false;
+	}
+
 	@Override
 	public EquationPiece copy(EquationPiece parent){
 		Factor factor = new Factor(parent, this.left);
 		factor.prefix = this.prefix;
 		factor.setContent(this.content);
+		if (getExpression() != null) factor.getChildren().add(getExpression().copy(factor));
 		if (this.exponent != null) factor.setExponent((Factor)this.exponent.copy(factor));
 		if (this.argument != null) factor.setArgument((Expression)this.argument.copy(factor));
 		return factor;
@@ -44,10 +69,13 @@ public class Factor extends EquationPiece{
 	public String getString(boolean pref){
 		StringBuilder builder = new StringBuilder();
 		if (pref || !this.prefix.equals("+")) builder.append(this.prefix);
-		if (this.pieces.size() == 0){
-			builder.append(this.content);
+		if (getExpression() != null){
+			builder.append(getExpression().getString(true));
 		} else {
-			builder.append(this.pieces.get(0).getString(true));
+			builder.append(this.content);
+		}
+		if (this.argument != null){
+			builder.append(this.argument.getString(true));
 		}
 		if (this.exponent != null){
 			builder.append("^");
@@ -59,6 +87,7 @@ public class Factor extends EquationPiece{
 	@Override
 	public String print(int depth){
 		StringBuilder builder = new StringBuilder();
+		if (this.parent == null) builder.append("NULL parent\n");
 		if (this.pieces.size() == 0){
 			builder.append("\t".repeat(depth)+"["+(this.prefix == null ? "" : this.prefix)+"] "+this.content+" -> "+(this.left ? "L" : "R"));
 			if (this.argument != null){

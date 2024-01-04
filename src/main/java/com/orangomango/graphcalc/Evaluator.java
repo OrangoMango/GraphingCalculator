@@ -15,6 +15,15 @@ public class Evaluator{
 		this.variables = vars;
 	}
 
+	public double parse(){
+		this.pos = 0;
+		double x = parseExpression();
+		if (this.pos != this.expression.length()-1){
+			throw new RuntimeException("Could not parse: "+this.expression.substring(this.pos));
+		}
+		return x;
+	}
+
 	public static Function<Double, Double> buildFunction(String expression, String argument, Map<String, Double> v){
 		Map<String, Double> vars = v == null ? new HashMap<>() : new HashMap<>(v);
 		Evaluator eval = new Evaluator(expression, vars);
@@ -39,15 +48,6 @@ public class Evaluator{
 		this.pos--;
 
 		return false;
-	}
-
-	public double parse(){
-		this.pos = 0;
-		double x = parseExpression();
-		if (this.pos != this.expression.length()-1){
-			throw new RuntimeException("Could not parse: "+this.expression.substring(this.pos));
-		}
-		return x;
 	}
 
 	private double parseExpression(){

@@ -37,6 +37,7 @@ public class Term extends EquationPiece{
 	@Override
 	public String print(int depth){
 		StringBuilder builder = new StringBuilder();
+		if (this.parent == null) builder.append("NULL parent\n");
 		builder.append("\t".repeat(depth)+"Term ["+(this.prefix == null ? "" : this.prefix)+"]\n");
 		for (EquationPiece p : this.pieces){
 			builder.append(p.print(depth+1)).append("\n");

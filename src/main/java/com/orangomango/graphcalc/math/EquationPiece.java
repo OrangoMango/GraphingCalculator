@@ -17,6 +17,10 @@ public abstract class EquationPiece{
 		return this.pieces;
 	}
 
+	public boolean getSide(){
+		return this.left;
+	}
+
 	public EquationPiece getParent(){
 		return this.parent;
 	}
@@ -35,6 +39,23 @@ public abstract class EquationPiece{
 	public abstract EquationPiece copy(EquationPiece parent);
 	public abstract String getString(boolean pref);
 	public abstract String print(int depth);
+
+	@Override
+	public boolean equals(Object other){
+		if (other instanceof EquationPiece ep){
+			for (EquationPiece piece : this.pieces){
+				if (!ep.getChildren().contains(piece)){
+					return false;
+				}
+			}
+			for (EquationPiece piece : ep.getChildren()){
+				if (!this.pieces.contains(piece)){
+					return false;
+				}
+			}
+			return true;
+		} else return false;
+	}
 
 	@Override
 	public String toString(){

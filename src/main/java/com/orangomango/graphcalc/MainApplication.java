@@ -361,7 +361,15 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		//launch(args);
 
-		Equation eq = new Equation("5/x+3*x-3/x+8*x^2-2*x-5*x^2=0");
+		Equation eq = new Equation("(y+2)*(y-3)=x-3");
+		/*Map<String, Double> params = new HashMap<>();
+		params.put("x", 3.0);
+		List<Double> solution = eq.solve("y", params);
+		System.out.println(solution);*/
+
+		System.out.println(eq.getLeftSide());
+		System.out.println(eq.getRightSide());
+		System.out.println(eq.getEquation());
 
 		System.exit(0);
 	}
