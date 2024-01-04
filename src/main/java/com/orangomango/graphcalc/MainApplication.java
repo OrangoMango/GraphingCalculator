@@ -362,10 +362,10 @@ public class MainApplication extends Application{
 		//launch(args);
 
 		Equation eq = new Equation("(y+2)*(y-3)=x-3");
-		/*Map<String, Double> params = new HashMap<>();
+		Map<String, Double> params = new HashMap<>();
 		params.put("x", 3.0);
 		List<Double> solution = eq.solve("y", params);
-		System.out.println(solution);*/
+		System.out.println(solution);
 
 		System.out.println(eq.getLeftSide());
 		System.out.println(eq.getRightSide());

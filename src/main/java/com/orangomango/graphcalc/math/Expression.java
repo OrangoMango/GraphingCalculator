@@ -131,11 +131,12 @@ public class Expression extends EquationPiece{
 		for (EquationPiece p : toRemove){
 			this.pieces.remove(p);
 		}
+		toRemove.clear();
 
-		// Rewrite negative terms where the first factor is negative
+		// Rewrite terms where the first factor is negative
 		for (EquationPiece piece : this.pieces){
-			if (piece.prefix.equals("-") && piece.getChildren().get(0).prefix.equals("-")){
-				piece.prefix = "+";
+			if (piece.getChildren().get(0).prefix.equals("-")){
+				piece.prefix = piece.prefix.equals("-") ? "+" : "-";
 				piece.getChildren().get(0).prefix = "+";
 			}
 		}
@@ -147,6 +148,26 @@ public class Expression extends EquationPiece{
 				newFactor.setContent("1");
 				piece.getChildren().add(0, newFactor);
 			}
+		}
+
+		// Remove useless parenthesis
+		final int size = this.pieces.size();
+		for (int i = 0; i < size; i++){
+			EquationPiece piece = this.pieces.get(i);
+			if (piece.getChildren().size() == 1){
+				Factor f = (Factor)piece.getChildren().get(0);
+				if (f.getExpression() != null){
+					for (EquationPiece t : f.getExpression().getChildren()){
+						t.setParent(this);
+						this.pieces.add(t);
+					}
+					toRemove.add(piece);
+				}
+			}
+		}
+
+		for (EquationPiece p : toRemove){
+			this.pieces.remove(p);
 		}
 
 		applyToChildren(expr -> expr.rewrite());
@@ -218,14 +239,6 @@ public class Expression extends EquationPiece{
 					piece.getChildren().remove(multiplied);
 					if (piece.getChildren().indexOf(toMultiply) == 0){
 						toMultiply.prefix = "+";
-					}
-					if (piece.getChildren().size() == 1){ // There is only 1 expression now
-						Expression exp = ((Factor)piece.getChildren().get(0)).getExpression();
-						toRemove.add(piece);
-						for (EquationPiece p : exp.getChildren()){
-							p.setParent(piece.getParent());
-							piece.getParent().getChildren().add(p);
-						}
 					}
 				}
 			}

@@ -3,6 +3,8 @@ package com.orangomango.graphcalc.math;
 import java.util.*;
 import java.util.function.Predicate;
 
+import com.orangomango.graphcalc.Evaluator;
+
 public class Equation{
 	private Expression leftSide, rightSide;
 
@@ -21,7 +23,7 @@ public class Equation{
 		moveAll(t -> !t.getSide());
 	}
 
-	/*public List<Double> solve(String varName, Map<String, Double> params){
+	public List<Double> solve(String varName, Map<String, Double> params){
 		moveAll(term -> {
 			for (EquationPiece p : term.getChildren()){
 				Factor f = (Factor)p;
@@ -32,11 +34,56 @@ public class Equation{
 			return false;
 		});
 
-		this.leftSide.calculate(params);
-		this.rightSide.calculate(params);
+		Expression expression = (Expression)this.leftSide.copy(null);
+		expression.calculate(params);
+		beautify(expression);
 
-		return null;
-	}*/
+		Evaluator eval = new Evaluator(this.rightSide.getString(true), params);
+		double a = 0;
+		Double b = Double.NaN;
+		double c = -eval.parse();
+
+		for (EquationPiece piece : expression.getChildren()){
+			List<EquationPiece> coef = new ArrayList<>();
+			boolean hasExp = false;
+			boolean found = false;
+			double sum = 0;
+			for (EquationPiece f : piece.getChildren()){
+				Factor factor = (Factor)f;
+				if (!factor.getContent().equals(varName)){
+					eval = new Evaluator(factor.getString(true), params);
+					sum += eval.parse();
+					found = true;
+				} else if (factor.getExponent() != null){
+					hasExp = true;
+				}
+			}
+			if (piece.prefix.equals("-")){
+				sum *= -1;
+			}
+			if (!found) sum = 1;
+
+			if (hasExp){
+				a = sum;
+			} else {
+				b = sum;
+			}
+		}
+
+		List<Double> output = new ArrayList<>();
+		if (a == 0){
+			double sol = -c/b;
+			output.add(sol);
+		} else {
+			double delta = Math.sqrt(b*b-4*a*c);
+			double sol1 = (-b+delta)/(2*a);
+			double sol2 = (-b-delta)/(2*a);
+			output.add(sol1);
+			output.add(sol2);
+		}
+
+		return output;
+	}
 
 	public Expression getLeftSide(){
 		return this.leftSide;
@@ -44,23 +91,6 @@ public class Equation{
 
 	public Expression getRightSide(){
 		return this.rightSide;
-	}
-
-	private void fix(){
-		if (this.leftSide.getChildren().size() == 0){
-			Term newTerm = new Term(this.leftSide, true);
-			Factor newFactor = new Factor(newTerm, true);
-			newFactor.setContent("0");
-			newTerm.getChildren().add(newFactor);
-			this.leftSide.getChildren().add(newTerm);
-		}
-		if (this.rightSide.getChildren().size() == 0){
-			Term newTerm = new Term(this.rightSide, false);
-			Factor newFactor = new Factor(newTerm, false);
-			newFactor.setContent("0");
-			newTerm.getChildren().add(newFactor);
-			this.rightSide.getChildren().add(newTerm);
-		}
 	}
 
 	public void moveAll(Predicate<Term> condition){
@@ -93,7 +123,22 @@ public class Equation{
 
 		beautify(this.leftSide);
 		beautify(this.rightSide);
-		fix();
+		
+		// Left side or Right side could be empty
+		if (this.leftSide.getChildren().size() == 0){
+			Term newTerm = new Term(this.leftSide, true);
+			Factor newFactor = new Factor(newTerm, true);
+			newFactor.setContent("0");
+			newTerm.getChildren().add(newFactor);
+			this.leftSide.getChildren().add(newTerm);
+		}
+		if (this.rightSide.getChildren().size() == 0){
+			Term newTerm = new Term(this.rightSide, false);
+			Factor newFactor = new Factor(newTerm, false);
+			newFactor.setContent("0");
+			newTerm.getChildren().add(newFactor);
+			this.rightSide.getChildren().add(newTerm);
+		}
 	}
 
 	private static void beautify(Expression expression){
