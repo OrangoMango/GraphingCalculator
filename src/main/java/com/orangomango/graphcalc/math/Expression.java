@@ -100,11 +100,32 @@ public class Expression extends EquationPiece{
 			}
 		}
 
+		// Handle expressions that have an exponent
+		for (EquationPiece piece : this.pieces){
+			final int size = piece.getChildren().size();
+			for (int i = 0; i < size; i++){
+				Factor factor = (Factor)piece.getChildren().get(i);
+				if (factor.getExpression() != null && factor.getExponent() != null){
+					if (factor.getExponent().prefix.equals("+")){
+						try {
+							int times = Integer.parseInt(factor.getExponent().getContent()); // TODO: ^0 = 1
+							factor.setExponent(null);
+							for (int j = 0; j < times-1; j++){
+								Factor copy = (Factor)factor.copy(piece);
+								copy.prefix = "*";
+								piece.getChildren().add(copy);
+							}
+						} catch (NumberFormatException ex){}
+					}
+				}
+			}
+		}
+
 		for (EquationPiece piece : this.pieces){
 			if (piece.getChildren().size() == 1){
 				Factor f = (Factor)piece.getChildren().get(0);
 				// Remove factors that have content '0'
-				if (f.getContent().equals("0")){
+				if (f.getContent() != null && f.getContent().equals("0")){ // TODO: Improve
 					piece.getChildren().remove(f);
 				}
 			} else {
@@ -156,7 +177,7 @@ public class Expression extends EquationPiece{
 			EquationPiece piece = this.pieces.get(i);
 			if (piece.getChildren().size() == 1){
 				Factor f = (Factor)piece.getChildren().get(0);
-				if (f.getExpression() != null){
+				if (f.getExpression() != null && f.getExponent() == null){
 					for (EquationPiece t : f.getExpression().getChildren()){
 						t.setParent(this);
 						this.pieces.add(t);

@@ -52,7 +52,7 @@ public class GraphFunction{
 		for (double i = from; i <= to; i += step){
 			Map<String, Double> params = new HashMap<>();
 			params.put("x", i);
-			List<Double> output = null; //this.equation.solve("y", params);
+			List<Double> output = this.equation.solve("y", params);
 			values1.add(new Pair<Double, Double>(i, output.get(0) > minY && output.get(0) < maxY ? output.get(0) : null));
 			if (output.size() > 1) values2.add(new Pair<Double, Double>(i, output.get(1) > minY && output.get(1) < maxY ? output.get(1) : null));
 		}

@@ -40,7 +40,7 @@ public class Equation{
 
 		Evaluator eval = new Evaluator(this.rightSide.getString(true), params);
 		double a = 0;
-		Double b = Double.NaN;
+		double b = 0;
 		double c = -eval.parse();
 
 		for (EquationPiece piece : expression.getChildren()){
@@ -144,11 +144,12 @@ public class Equation{
 	private static void beautify(Expression expression){
 		// Remove the parenthesis and reduce
 		expression.removeMinus();
+		expression.rewrite();
 		while (expression.canBeReduced()){
 			expression.reduce();
 		}
 
-		// Rewrite the expression
+		// Rewrite the expression again
 		expression.rewrite();
 
 		// Group the common factors

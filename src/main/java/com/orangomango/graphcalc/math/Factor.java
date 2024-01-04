@@ -94,13 +94,14 @@ public class Factor extends EquationPiece{
 				builder.append("\n");
 				builder.append("\t".repeat(depth)+"Argument: \n");
 				builder.append(this.argument.print(depth+1));
-			} else if (this.exponent != null){
-				builder.append("\n");
-				builder.append("\t".repeat(depth)+"Exponent: \n");
-				builder.append(this.exponent.print(depth+1));
 			}
 		} else {
 			builder.append("\t".repeat(depth)+"["+(this.prefix == null ? "" : this.prefix)+"]:\n"+this.pieces.get(0).print(depth));
+		}
+		if (this.exponent != null){
+			builder.append("\n");
+			builder.append("\t".repeat(depth)+"Exponent: \n");
+			builder.append(this.exponent.print(depth+1));
 		}
 
 		return builder.toString();

@@ -199,10 +199,10 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2+y^2=9"));
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2+y^2=9"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2/4+y^2=1"));
 		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
-		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.CYAN, "x = x'-2", "y = 2*y'"));
+		//GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.CYAN, "x = x'-2", "y = 2*y'"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -361,7 +361,7 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		//launch(args);
 
-		Equation eq = new Equation("(y+2)*(y-3)=x-3");
+		Equation eq = new Equation("(y+2)^2=x");
 		Map<String, Double> params = new HashMap<>();
 		params.put("x", 3.0);
 		List<Double> solution = eq.solve("y", params);
