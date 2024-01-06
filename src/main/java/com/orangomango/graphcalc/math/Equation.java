@@ -61,7 +61,7 @@ public class Equation{
 				}
 			}
 
-			Map<String, Double> args = new HashMap<>(params);
+			Map<String, Double> args = params == null ? new HashMap<>() : new HashMap<>(params);
 			args.put(varName, 1.0);
 			eval = new Evaluator(piece.getString(true), args);
 			double sum = eval.parse();

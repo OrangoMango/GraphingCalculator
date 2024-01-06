@@ -199,10 +199,11 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2+y^2=9"));
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2/4+y^2=1"));
-		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
-		//GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
+		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2/4+y^2=1"));
+		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
+		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
+		GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -361,11 +362,11 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		launch(args);
 
-		/*Equation eq = new Equation("(x*sin(PI/4)+y*cos(PI/4))^2=0+1-(x*cos(PI/4)-y*sin(PI/4))^2/4");
+		/*Equation eq = new Equation("x^2-x+1=0");
 		System.out.println("-------------");
-		Map<String, Double> params = new HashMap<>();
-		params.put("x", -1.26491106);
-		List<Double> solution = eq.solve("y", params);
+		//Map<String, Double> params = new HashMap<>();
+		//params.put("x", -1.26491106);
+		List<Double> solution = eq.solve("x", null);
 		System.out.println(solution);
 		System.out.println("-------------");
 
@@ -373,6 +374,6 @@ public class MainApplication extends Application{
 		System.out.println(eq.getRightSide());
 		System.out.println(eq.getEquation());
 
-		System.exit(0);/*/
+		System.exit(0);*/
 	}
 }
