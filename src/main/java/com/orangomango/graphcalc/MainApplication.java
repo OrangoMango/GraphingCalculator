@@ -159,7 +159,7 @@ public class MainApplication extends Application{
 		// Transform menu
 		Menu transformMenu = new Menu("Transform");
 		MenuItem applyTransform = new MenuItem("Apply transformation");
-		/*applyTransform.setOnAction(e -> {
+		applyTransform.setOnAction(e -> {
 			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
 			alert.setTitle("Apply transformation");
 			GridPane gpane = new GridPane();
@@ -170,11 +170,24 @@ public class MainApplication extends Application{
 			for (GraphFunction f : this.functions){
 				box.getItems().add(f);
 			}
-			Label xPrime = new Label("x' = ");
-			Label yPrime = new Label("y' = ");
+			box.getSelectionModel().select(0);
+			ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
+			Label xPrime = new Label("x = "); // TODO: Invert to x'=
+			Label yPrime = new Label("y = ");
 			TextField xEq = new TextField();
 			TextField yEq = new TextField();
-		});*/
+			gpane.add(box, 0, 0, 2, 1);
+			gpane.add(picker, 0, 1, 2, 1);
+			gpane.add(xPrime, 0, 2);
+			gpane.add(yPrime, 0, 3);
+			gpane.add(xEq, 1, 2);
+			gpane.add(yEq, 1, 3);
+			alert.getDialogPane().setContent(gpane);
+			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
+				GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), "x="+xEq.getText(), "y="+yEq.getText());
+				GraphFunction.addFunction(this.functions, transformed);
+			});
+		});
 
 		menuBar.getMenus().addAll(fileMenu, editMenu, transformMenu);
 		editMenu.getItems().addAll(editGraphs, calculate);
@@ -199,11 +212,11 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
+		//GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2/4+y^2=1"));
-		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
-		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
-		GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));
+		//GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
+		//GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
+		//GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -332,7 +345,7 @@ public class MainApplication extends Application{
 					for (int i = 0; i < func.getResults().get(0).getValues().size(); i++){
 						Double y1 = func.getResults().get(0).getValues().get(i).getValue();
 						Double y2 = func.getResults().get(1).getValues().get(i).getValue();
-						if (y1 != null && y2 != null && (Math.abs(y1) < 1 || Math.abs(y2) < 1)){
+						if (y1 != null && y2 != null && Math.abs(y1-y2) < 1){
 							if (i < func.getResults().get(0).getValues().size()-1){
 								Double ny1 = func.getResults().get(0).getValues().get(i+1).getValue();
 								Double ny2 = func.getResults().get(1).getValues().get(i+1).getValue();
