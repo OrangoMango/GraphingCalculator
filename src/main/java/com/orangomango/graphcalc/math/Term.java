@@ -6,7 +6,7 @@ public class Term extends EquationPiece{
 	}
 
 	public void changeSign(){
-		if (this.prefix == null || this.prefix.equals("+")){
+		if (this.prefix.equals("+")){
 			this.prefix = "-";
 		} else {
 			this.prefix = "+";

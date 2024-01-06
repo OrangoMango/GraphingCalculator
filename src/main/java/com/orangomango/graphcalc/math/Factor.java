@@ -1,5 +1,7 @@
 package com.orangomango.graphcalc.math;
 
+import java.util.Objects;
+
 public class Factor extends EquationPiece{
 	private String content;
 	private Expression argument;
@@ -20,36 +22,33 @@ public class Factor extends EquationPiece{
 					p.getChildren().add(factor.copy(p));
 				} else {
 					EquationPiece newFactor = factor.copy(p);
+					boolean addOne = newFactor.prefix.equals("/");
 					if (p.getChildren().get(0).prefix.equals("-")){
 						newFactor.prefix = factor.prefix.equals("-") ? "+" : "-";
+					} else {
+						newFactor.prefix = "+";
 					}
 					p.getChildren().get(0).prefix = this.prefix;
 					p.getChildren().add(0, newFactor);
+					if (addOne){
+						Factor one = new Factor(p, this.left);
+						one.setContent("1");
+						one.prefix = newFactor.prefix;
+						newFactor.prefix = "/";
+						p.getChildren().add(0, one);
+					}
 				}
 			}
-		}
-	}
-
-	// TODO: Rewrite
-	private static <T> boolean checkEquals(T piece1, T piece2){
-		if (!(piece1 == null && piece2 == null)){
-			if (piece1 != null && piece2 != null){
-				return piece1.equals(piece2);
-			} else {
-				return false;
-			}
-		} else {
-			return true;
 		}
 	}
 
 	@Override
 	public boolean equals(Object other){
 		if (other instanceof Factor f){
-			if (!checkEquals(getExponent(), f.getExponent())) return false;
-			if (!checkEquals(getArgument(), f.getArgument())) return false;
-			if (!checkEquals(getExpression(), f.getExpression())) return false;
-			if (!checkEquals(getContent(), f.getContent())) return false;
+			if (!Objects.equals(getExponent(), f.getExponent())) return false;
+			if (!Objects.equals(getArgument(), f.getArgument())) return false;
+			if (!Objects.equals(getExpression(), f.getExpression())) return false;
+			if (!Objects.equals(getContent(), f.getContent())) return false;
 			return true;
 		} else return false;
 	}

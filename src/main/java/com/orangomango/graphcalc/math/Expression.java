@@ -2,13 +2,23 @@ package com.orangomango.graphcalc.math;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import com.orangomango.graphcalc.Evaluator;
 
 public class Expression extends EquationPiece{
 	public Expression(EquationPiece parent, boolean left){
 		super(parent, left);
+	}
+
+	public List<Term> getCommonTerms(){
+		List<Term> output = new ArrayList<>();
+		for (EquationPiece piece : this.pieces){
+			if (!output.contains(piece)){
+				output.add((Term)piece);
+			}
+		}
+
+		return output;
 	}
 
 	public List<Factor> getCommonFactors(){
@@ -25,7 +35,7 @@ public class Expression extends EquationPiece{
 		return output;
 	}
 
-	public boolean canBeReduced(){
+	public boolean canBeExpanded(){
 		for (EquationPiece piece : this.pieces){
 			if (piece.getChildren().size() >= 2){
 				boolean found1 = false;
@@ -51,17 +61,19 @@ public class Expression extends EquationPiece{
 			for (EquationPiece f : piece.getChildren()){
 				Factor factor = (Factor)f;
 				Expression exp = factor.getExpression();
-				if (exp != null){
-					try {
-						Evaluator eval = new Evaluator(exp.getString(true), params);
-						double value = eval.parse();
-						factor.getChildren().clear();
-						if (value < 0){
-							factor.prefix = "-";
+				try {
+					Evaluator eval = new Evaluator(factor.getString(true).substring(1), params);
+					double value = eval.parse();
+					if (exp != null) factor.getChildren().clear();
+					if (value < 0){
+						if (factor.getParent().prefix.equals("+")){
+							factor.getParent().prefix = "-";
+						} else {
+							factor.getParent().prefix = "+";
 						}
-						factor.setContent(Double.toString(Math.abs(value)));
-					} catch (RuntimeException ex){}
-				}
+					}
+					if (factor.getArgument() == null) factor.setContent(Double.toString(Math.abs(value)));
+				} catch (RuntimeException ex){}
 			}
 		}
 
@@ -74,13 +86,19 @@ public class Expression extends EquationPiece{
 			Map<String, Integer> count = new HashMap<>();
 			for (EquationPiece p : piece.getChildren()){
 				String disp = p.getString(true).substring(1);
-				count.put(disp, count.getOrDefault(disp, 0)+1);
+				for (int i = 0; i < disp.length(); i++){
+					char c = disp.charAt(i);
+					if (c >= 'a' && c <= 'z'){
+						count.put(disp, count.getOrDefault(disp, 0)+1);
+						break;
+					}
+				}
 			}
 			for (Map.Entry<String, Integer> entry : count.entrySet()){
 				if (entry.getValue() > 1){
-					List<EquationPiece> toRemove = new ArrayList<>();
 					boolean first = true;
-					for (EquationPiece p : piece.getChildren()){
+					for (int i = 0; i < piece.getChildren().size(); i++){
+						EquationPiece p = piece.getChildren().get(i);
 						if (p.getString(true).substring(1).equals(entry.getKey())){
 							if (first){
 								Factor factor = (Factor)p;
@@ -89,12 +107,10 @@ public class Expression extends EquationPiece{
 								factor.setExponent(exp);
 								first = false;
 							} else {
-								toRemove.add(p);
+								piece.getChildren().remove(i);
+								i--;
 							}
 						}
-					}
-					for (EquationPiece p : toRemove){
-						piece.getChildren().remove(p);
 					}
 				}
 			}
@@ -126,33 +142,28 @@ public class Expression extends EquationPiece{
 				Factor f = (Factor)piece.getChildren().get(0);
 				// Remove factors that have content '0'
 				if (f.getContent() != null && f.getContent().equals("0")){ // TODO: Improve
-					piece.getChildren().remove(f);
+					//piece.getChildren().remove(f);
 				}
 			} else {
-				List<EquationPiece> toRemove = new ArrayList<>();
-				for (EquationPiece p : piece.getChildren()){
+				for (int i = 0; i < piece.getChildren().size(); i++){
+					EquationPiece p = piece.getChildren().get(i);
 					// Remove factors that have a term-index > 0 and content = '1'
 					if (((Factor)p).getContent() != null && ((Factor)p).getContent().equals("1") && (p.prefix.equals("*") || p.prefix.equals("/"))){
-						toRemove.add(p);
+						piece.getChildren().remove(i);
+						i--;
 					}
-				}
-				for (EquationPiece p : toRemove){
-					piece.getChildren().remove(p);
 				}
 			}
 		}
 
 		// Remove terms that have no factors
-		List<EquationPiece> toRemove = new ArrayList<>();
-		for (EquationPiece piece : this.pieces){
+		for (int i = 0; i < this.pieces.size(); i++){
+			EquationPiece piece = this.pieces.get(i);
 			if (piece.getChildren().size() == 0){
-				toRemove.add(piece);
+				this.pieces.remove(i);
+				i--;
 			}
 		}
-		for (EquationPiece p : toRemove){
-			this.pieces.remove(p);
-		}
-		toRemove.clear();
 
 		// Rewrite terms where the first factor is negative
 		for (EquationPiece piece : this.pieces){
@@ -172,7 +183,7 @@ public class Expression extends EquationPiece{
 		}
 
 		// Remove useless parenthesis
-		final int size = this.pieces.size();
+		int size = this.pieces.size();
 		for (int i = 0; i < size; i++){
 			EquationPiece piece = this.pieces.get(i);
 			if (piece.getChildren().size() == 1){
@@ -182,42 +193,55 @@ public class Expression extends EquationPiece{
 						t.setParent(this);
 						this.pieces.add(t);
 					}
-					toRemove.add(piece);
+					this.pieces.remove(i);
+					i--;
+					size--;
 				}
 			}
-		}
-
-		for (EquationPiece p : toRemove){
-			this.pieces.remove(p);
 		}
 
 		applyToChildren(expr -> expr.rewrite());
 	}
 
-	public void group(Factor groupingFactor, String prefix){
+	// TODO: Group entire terms instead of single factors when possible
+	public void group(String prefix, Factor... gFactors){
+		List<Factor> groupingFactors = Arrays.asList(gFactors);
 		List<EquationPiece> common = new ArrayList<>();
-		Predicate<EquationPiece> acceptable = c -> c.equals(groupingFactor) && (((c.prefix.equals("+") || c.prefix.equals("-")) && prefix.equals("*")) || c.prefix.equals(prefix));
 		for (EquationPiece p : this.pieces){
-			if (p.getChildren().stream().filter(acceptable).findAny().isPresent()){
+			boolean all = true;
+			for (Factor f : groupingFactors){
+				if (!p.getChildren().contains(f)){
+					all = false;
+					break;
+				}
+			}
+			if (all && p.getChildren().stream().filter(c -> groupingFactors.contains(c) && (((c.prefix.equals("+") || c.prefix.equals("-")) && prefix.equals("*")) || c.prefix.equals(prefix))).findAny().isPresent()){
 				common.add(p);
 			}
 		}
 
+		//System.out.format("Grouping: %40s\t%s\t%d\t%s\t%s\n", groupingFactors.stream().map(f -> f.getString(true)).toList(), prefix, common.size(), getString(true), common.stream().map(c -> c.getString(true)).toList());
+
 		if (common.size() <= 1) return;
 		Term newTerm = new Term(this, this.left);
-		Factor commonFactor = (Factor)groupingFactor.copy(newTerm);
-		commonFactor.prefix = prefix;
 		Factor coef = new Factor(newTerm, this.left);
 		Expression exp = new Expression(coef, this.left);
 		newTerm.getChildren().add(coef);
-		newTerm.getChildren().add(commonFactor);
+		for (int i = 0; i < groupingFactors.size(); i++){
+			Factor gFactor = groupingFactors.get(i);
+			Factor commonFactor = (Factor)gFactor.copy(newTerm);
+			if (i == 0) commonFactor.prefix = prefix;
+			newTerm.getChildren().add(commonFactor);
+		}
 		coef.getChildren().add(exp);
 		for (EquationPiece p : common){
 			Term nt = new Term(exp, this.left);
 			nt.prefix = p.prefix;
 			for (EquationPiece f : p.getChildren()){
-				if (!acceptable.test(f)){
+				//System.out.println("Testing: "+f.getString(true));
+				if (!groupingFactors.contains(f)){
 					nt.getChildren().add(f);
+					//System.out.println("> Passed");
 				}
 			}
 			if (nt.getChildren().size() == 0){
@@ -234,42 +258,63 @@ public class Expression extends EquationPiece{
 		}
 		this.pieces.add(newTerm);
 
-		applyToChildren(expr -> expr.group(groupingFactor, prefix));
+		//System.out.println("Result: "+getString(true));
+
+		applyToChildren(expr -> expr.group(prefix, gFactors));
 	}
 
-	public void reduce(){
-		List<EquationPiece> toRemove = new ArrayList<>();
-		final int size = this.pieces.size();
+	public void expand(){
+		//System.out.println("INTERN1: "+this.pieces.size());
+		//System.out.println(getString(true));
+
+		int size = this.pieces.size();
 		for (int i = 0; i < size; i++){
 			EquationPiece piece = this.pieces.get(i);
 			if (piece.getChildren().size() >= 2){
 				Factor toMultiply = null;
 				Factor multiplied = null;
-				for (EquationPiece f : piece.getChildren()){
-					Factor factor = (Factor)f;
+				int pos1 = -1;
+				int pos2 = -1;
+				for (int j = 0; j < piece.getChildren().size(); j++){
+					Factor factor = (Factor)piece.getChildren().get(j);
 					if (factor.getExpression() != null && toMultiply == null){
 						toMultiply = factor;
+						pos1 = j;
 					} else {
 						multiplied = factor;
+						pos2 = j;
 					}
 					if (toMultiply != null && multiplied != null) break;
 				}
 
 				if (toMultiply != null && multiplied != null){
-					toMultiply.multiply(multiplied, piece.getChildren().indexOf(toMultiply) < piece.getChildren().indexOf(multiplied));		
+					toMultiply.multiply(multiplied, pos1 < pos2);
 					piece.getChildren().remove(multiplied);
-					if (piece.getChildren().indexOf(toMultiply) == 0){
+					if (pos2 == 0){
 						toMultiply.prefix = "+";
+					}
+					if (piece.getChildren().size() == 1){ // There is only 1 expression now
+						Expression exp = ((Factor)piece.getChildren().get(0)).getExpression();
+						this.pieces.remove(i);
+						i--;
+						size--;
+						for (EquationPiece p : exp.getChildren()){
+							if (piece.prefix.equals("-")){ // TODO: Check if also the expression has a - (?)
+								((Term)p).changeSign();
+							}
+							p.setParent(piece.getParent());
+							this.pieces.add(p);
+						}
+						//System.out.println("Applied removal");
 					}
 				}
 			}
 		}
 
-		for (EquationPiece piece : toRemove){
-			this.pieces.remove(piece);
-		}
+		//System.out.println("INTERN2: "+this.pieces.size());
+		//System.out.println(getString(true));
 
-		applyToChildren(expr -> expr.reduce());
+		applyToChildren(expr -> expr.expand());
 	}
 
 	public void removeMinus(){

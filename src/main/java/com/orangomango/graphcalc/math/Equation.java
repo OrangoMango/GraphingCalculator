@@ -21,22 +21,31 @@ public class Equation{
 
 		// Move everything to one side (left)
 		moveAll(t -> !t.getSide());
+		beautify(this.leftSide);
+		beautify(this.rightSide);
 	}
 
 	public List<Double> solve(String varName, Map<String, Double> params){
+		//System.out.println("> "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
 		moveAll(term -> {
 			for (EquationPiece p : term.getChildren()){
 				Factor f = (Factor)p;
+				//System.out.println("Checking: "+f.getString(true));
 				if (f.getContent() != null && f.getContent().equals(varName)){
+					//System.out.println("\tReturned true");
 					return true;
 				}
 			}
 			return false;
 		});
+		//System.out.println("> "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
 
 		Expression expression = (Expression)this.leftSide.copy(null);
 		expression.calculate(params);
+		//System.out.println("> "+expression.getString(true)+"="+this.rightSide.getString(true));
 		beautify(expression);
+
+		//System.out.println("> "+expression.getString(true)+"="+this.rightSide.getString(true));
 
 		Evaluator eval = new Evaluator(this.rightSide.getString(true), params);
 		double a = 0;
@@ -44,24 +53,18 @@ public class Equation{
 		double c = -eval.parse();
 
 		for (EquationPiece piece : expression.getChildren()){
-			List<EquationPiece> coef = new ArrayList<>();
 			boolean hasExp = false;
-			boolean found = false;
-			double sum = 0;
 			for (EquationPiece f : piece.getChildren()){
 				Factor factor = (Factor)f;
-				if (!factor.getContent().equals(varName)){
-					eval = new Evaluator(factor.getString(true), params);
-					sum += eval.parse();
-					found = true;
-				} else if (factor.getExponent() != null){
+				if (factor.getExponent() != null){
 					hasExp = true;
 				}
 			}
-			if (piece.prefix.equals("-")){
-				sum *= -1;
-			}
-			if (!found) sum = 1;
+
+			Map<String, Double> args = new HashMap<>(params);
+			args.put(varName, 1.0);
+			eval = new Evaluator(piece.getString(true), args);
+			double sum = eval.parse();
 
 			if (hasExp){
 				a = sum;
@@ -94,35 +97,28 @@ public class Equation{
 	}
 
 	public void moveAll(Predicate<Term> condition){
-		List<EquationPiece> toRemove = new ArrayList<>();
-		for (EquationPiece p : this.leftSide.getChildren()){
-			Term t = (Term)p;
+		for (int i = 0; i < this.leftSide.getChildren().size(); i++){
+			Term t = (Term)this.leftSide.getChildren().get(i);
 			if (!condition.test(t)){
 				t.changeSign();
 				t.moveAll(false);
-				toRemove.add(t);
+				this.leftSide.getChildren().remove(i);
+				i--;
+				this.rightSide.getChildren().add(t);
 			}
 		}
-		for (EquationPiece p : toRemove){
-			this.leftSide.getChildren().remove(p);
-			this.rightSide.getChildren().add(p);
-		}
-		toRemove.clear();
-		for (EquationPiece p : this.rightSide.getChildren()){
-			Term t = (Term)p;
+		for (int i = 0; i < this.rightSide.getChildren().size(); i++){
+			Term t = (Term)this.rightSide.getChildren().get(i);
 			if (condition.test(t)){
 				t.changeSign();
 				t.moveAll(true);
-				toRemove.add(t);
+				this.rightSide.getChildren().remove(i);
+				i--;
+				this.leftSide.getChildren().add(t);
 			}
 		}
-		for (EquationPiece p : toRemove){
-			this.rightSide.getChildren().remove(p);
-			this.leftSide.getChildren().add(p);
-		}
 
-		beautify(this.leftSide);
-		beautify(this.rightSide);
+		//System.out.println("Right after moving: "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
 		
 		// Left side or Right side could be empty
 		if (this.leftSide.getChildren().size() == 0){
@@ -145,23 +141,58 @@ public class Equation{
 		// Remove the parenthesis and reduce
 		expression.removeMinus();
 		expression.rewrite();
-		while (expression.canBeReduced()){
-			expression.reduce();
+		while (expression.canBeExpanded()){
+			expression.expand();
+			expression.rewrite();
+			//System.out.println("AFTER rewrite:\n"+expression.getString(true));
 		}
 
-		// Rewrite the expression again
-		expression.rewrite();
+		//System.out.println("\n"+expression.getString(true)+"\n");
 
-		// Group the common factors
-		List<Factor> common = expression.getCommonFactors();
-		for (Factor f : common){
-			try {
-				Integer.parseInt(f.getContent()); // TODO: Use regex
-			} catch (NumberFormatException ex){
-				expression.group(f, "*");
-				expression.group(f, "/");
+		// Group the common terms and factors
+		//System.out.println("\n\n> By terms");
+		List<Term> commonTerms = expression.getCommonTerms();
+		//System.out.println(commonTerms.stream().map(ep -> ep.getString(true)).toList());
+		for (Term t : commonTerms){
+			Factor[] factors = new Factor[t.getChildren().size()];
+			for (int i = 0; i < factors.length; i++){
+				factors[i] = (Factor)t.getChildren().get(i);
+			}
+			boolean hasLetter = false;
+			fLoop:
+			for (Factor f : factors){
+				String data = f.getString(true);
+				for (int i = 0; i < data.length(); i++){
+					char c = data.charAt(i);
+					if (c == 'x' || c == 'y'){ //(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){
+						hasLetter = true;
+						break fLoop;
+					}
+				}
+			}
+			if (hasLetter && factors.length > 1){
+				expression.group("*", factors);
+				expression.group("/", factors);
 			}
 		}
+		//System.out.println("AFTER grouping1: "+expression.getString(true));
+		//System.out.println("> By factors");
+		List<Factor> commonFactors = expression.getCommonFactors();
+		//System.out.println(commonFactors.stream().map(ep -> ep.getString(true)).toList());
+		for (Factor f : commonFactors){
+			if (f.getContent() != null){
+				for (int i = 0; i < f.getContent().length(); i++){
+					char c = f.getContent().charAt(i);
+					if (c == 'x' || c == 'y'){ //(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){
+						expression.group("*", f);
+						expression.group("/", f);
+						break;
+					}
+				}
+			}
+		}
+
+		//System.out.println("AFTER grouping2: "+expression.getString(true));
 
 		// Rewrite the expression again
 		expression.rewrite();
