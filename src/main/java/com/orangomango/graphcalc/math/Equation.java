@@ -29,25 +29,23 @@ public class Equation{
 	public List<Double> solve(String varName, Map<String, Double> params){	
 		Expression expression = (Expression)this.leftSide.copy(null);
 		Expression rightCopy = (Expression)this.rightSide.copy(null);
-		//System.out.println("> "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
+
+		// TODO: to improve performance, apply the moveAll function only once
 		moveAll(term -> {
 			for (EquationPiece p : term.getChildren()){
 				Factor f = (Factor)p;
-				//System.out.println("Checking: "+f.getString(true));
 				if (f.getContent() != null && f.getContent().equals(varName)){
-					//System.out.println("\tReturned true");
 					return true;
 				}
 			}
 			return false;
 		}, expression, rightCopy);
-		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(true));
+
 		expression.calculate(params);
-		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(true));
 		beautify(expression);
 		beautify(rightCopy);
 
-		//System.out.println("> "+expression.getString(true)+"="+this.rightSide.getString(true));
+		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(false));
 
 		Evaluator eval = new Evaluator(rightCopy.getString(true), params);
 		double a = 0;
@@ -78,7 +76,13 @@ public class Equation{
 		List<Double> output = new ArrayList<>();
 		if (a == 0){
 			double sol = -c/b;
-			output.add(sol);
+			if (b != 0){
+				output.add(sol);
+			} else if (Math.abs(c) < 0.00001){ // Almost 0
+				output.add(Double.POSITIVE_INFINITY);
+			} else {
+				output.add(Double.NaN);
+			}
 		} else {
 			double delta = Math.sqrt(b*b-4*a*c);
 			double sol1 = (-b+delta)/(2*a);
@@ -120,8 +124,6 @@ public class Equation{
 			}
 		}
 
-		//System.out.println("Right after moving: "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
-		
 		// Left side or Right side could be empty
 		if (leftSide.getChildren().size() == 0){
 			Term newTerm = new Term(leftSide, true);
@@ -146,15 +148,11 @@ public class Equation{
 		while (expression.canBeExpanded()){
 			expression.expand();
 			expression.rewrite();
-			//System.out.println("AFTER rewrite:\n"+expression.getString(true));
 		}
 
-		//System.out.println("\n"+expression.getString(true)+"\n");
-
 		// Group the common terms and factors
-		//System.out.println("\n\n> By terms");
+		// TODO: not only group by x and y
 		List<Term> commonTerms = expression.getCommonTerms();
-		//System.out.println(commonTerms.stream().map(ep -> ep.getString(true)).toList());
 		for (Term t : commonTerms){
 			Factor[] factors = new Factor[t.getChildren().size()];
 			for (int i = 0; i < factors.length; i++){
@@ -177,10 +175,7 @@ public class Equation{
 				expression.group("/", factors);
 			}
 		}
-		//System.out.println("AFTER grouping1: "+expression.getString(true));
-		//System.out.println("> By factors");
 		List<Factor> commonFactors = expression.getCommonFactors();
-		//System.out.println(commonFactors.stream().map(ep -> ep.getString(true)).toList());
 		for (Factor f : commonFactors){
 			if (f.getContent() != null){
 				for (int i = 0; i < f.getContent().length(); i++){
@@ -193,8 +188,6 @@ public class Equation{
 				}
 			}
 		}
-
-		//System.out.println("AFTER grouping2: "+expression.getString(true));
 
 		// Rewrite the expression again
 		expression.rewrite();

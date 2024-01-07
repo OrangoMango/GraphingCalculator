@@ -1,7 +1,6 @@
 package com.orangomango.graphcalc;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static com.orangomango.graphcalc.math.Equation.formatExponential;
 
@@ -22,15 +21,6 @@ public class Evaluator{
 			throw new RuntimeException("Could not parse: "+this.expression.substring(this.pos));
 		}
 		return x;
-	}
-
-	public static Function<Double, Double> buildFunction(String expression, String argument, Map<String, Double> v){
-		Map<String, Double> vars = v == null ? new HashMap<>() : new HashMap<>(v);
-		Evaluator eval = new Evaluator(expression, vars);
-		return x -> {
-			vars.put(argument, x);
-			return eval.parse();
-		};
 	}
 
 	private char nextChar(){

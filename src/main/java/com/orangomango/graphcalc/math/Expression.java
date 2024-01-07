@@ -56,9 +56,7 @@ public class Expression extends EquationPiece{
 		return false;
 	}
 
-	// TODO: Calculate (group) also multiple factors and multiple terms
 	public void calculate(Map<String, Double> params){
-		//System.out.println("FROM THIS: "+getString(true));
 		for (EquationPiece piece : this.pieces){
 			for (EquationPiece f : piece.getChildren()){
 				Factor factor = (Factor)f;
@@ -88,7 +86,6 @@ public class Expression extends EquationPiece{
 				piece.getChildren().add(newFactor);
 			} catch (RuntimeException ex){}
 		}
-		//System.out.println("TO THIS THIS: "+getString(true));
 
 		applyToChildren(expr -> expr.calculate(params));
 	}
@@ -216,7 +213,6 @@ public class Expression extends EquationPiece{
 		applyToChildren(expr -> expr.rewrite());
 	}
 
-	// TODO: Group entire terms instead of single factors when possible
 	public void group(String prefix, Factor... gFactors){
 		List<Factor> groupingFactors = Arrays.asList(gFactors);
 		List<EquationPiece> common = new ArrayList<>();
@@ -251,10 +247,8 @@ public class Expression extends EquationPiece{
 			Term nt = new Term(exp, this.left);
 			nt.prefix = p.prefix;
 			for (EquationPiece f : p.getChildren()){
-				//System.out.println("Testing: "+f.getString(true));
 				if (!groupingFactors.contains(f)){
 					nt.getChildren().add(f);
-					//System.out.println("> Passed");
 				}
 			}
 			if (nt.getChildren().size() == 0){
@@ -277,9 +271,6 @@ public class Expression extends EquationPiece{
 	}
 
 	public void expand(){
-		//System.out.println("INTERN1: "+this.pieces.size());
-		//System.out.println(getString(true));
-
 		int size = this.pieces.size();
 		for (int i = 0; i < size; i++){
 			EquationPiece piece = this.pieces.get(i);
@@ -318,26 +309,21 @@ public class Expression extends EquationPiece{
 							p.setParent(piece.getParent());
 							this.pieces.add(p);
 						}
-						//System.out.println("Applied removal");
 					}
 				}
 			}
 		}
 
-		//System.out.println("INTERN2: "+this.pieces.size());
-		//System.out.println(getString(true));
-
 		applyToChildren(expr -> expr.expand());
 	}
 
 	public void removeMinus(){
-		final int size = this.pieces.size();
+		int size = this.pieces.size();
 		for (int i = 0; i < size; i++){
 			EquationPiece piece = this.pieces.get(i);
-			EquationPiece toRemove = null;
 			for (EquationPiece p : piece.getChildren()){
 				Factor f = (Factor)p;
-				if (f.getExpression() != null && f.prefix.equals("-")){
+				if (f.getExpression() != null && f.prefix.equals("-") && f.getExponent() == null){
 					f.prefix = "+";
 					for (EquationPiece t : f.getExpression().getChildren()){
 						((Term)t).changeSign();
@@ -348,12 +334,11 @@ public class Expression extends EquationPiece{
 							t.setParent(this);
 							this.pieces.add(t);
 						}
-						toRemove = piece;
+						this.pieces.remove(i);
+						i--;
+						size--;
 					}
 				}
-			}
-			if (toRemove != null){
-				this.pieces.remove(toRemove);
 			}
 		}
 
@@ -361,7 +346,7 @@ public class Expression extends EquationPiece{
 	}
 
 	private void applyToChildren(Consumer<Expression> consumer){
-		final int size = this.pieces.size(); // TODO: Fix concurrentModification while deleting (?)
+		final int size = this.pieces.size();
 		for (int i = 0; i < size; i++){
 			EquationPiece piece = this.pieces.get(i);
 			for (EquationPiece f : piece.getChildren()){

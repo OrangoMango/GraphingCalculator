@@ -75,6 +75,8 @@ public class MainApplication extends Application{
 			for (GraphFunction f : this.functions){
 				list.getItems().add(f);
 			}
+
+			list.getSelectionModel().select(0);
 			content.add(list, 0, 0);
 			Button add = new Button("Add");
 			add.setOnAction(ev -> {
@@ -102,15 +104,16 @@ public class MainApplication extends Application{
 			});
 			Button remove = new Button("Remove");
 			remove.setOnAction(ev -> {
-				List<GraphFunction> selected = new ArrayList<>(list.getSelectionModel().getSelectedItems());
+				GraphFunction selected = list.getSelectionModel().getSelectedItem();
 				synchronized (this){
-					for (GraphFunction f : selected){
-						GraphFunction.removeFunction(this.functions, f);
-						list.getItems().remove(f);
-					}
+					GraphFunction.removeFunction(this.functions, selected);
+					list.getItems().remove(selected);
 				}
 			});
-			content.add(new VBox(5, add, remove), 1, 0);
+			ColorPicker changeColor = new ColorPicker();
+			changeColor.setOnAction(ev -> list.getSelectionModel().getSelectedItem().setColor(changeColor.getValue()));
+			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> changeColor.setValue(newV.getColor()));
+			content.add(new VBox(5, add, remove, changeColor), 1, 0);
 			alert.showAndWait();
 		});
 		MenuItem calculate = new MenuItem("Find intersection");
@@ -212,11 +215,11 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
+		/*GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2/4+y^2=1"));
 		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
 		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
-		GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));
+		GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));*/
 
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
@@ -271,7 +274,7 @@ public class MainApplication extends Application{
 
 	private void update(GraphicsContext gc){
 		gc.clearRect(0, 0, WIDTH, HEIGHT);
-		gc.setFill(Color.web("#B1B1B1"));
+		gc.setFill(Color.web("#F0F0F0"));
 		gc.fillRect(0, 0, WIDTH, HEIGHT);
 
 		final int cameraSpeed = 8;
@@ -332,9 +335,14 @@ public class MainApplication extends Application{
 					for (int i = 0; i < result.size(); i++){
 						Pair<Double, Double> point = result.get(i);
 						if (point.getValue() != null && !point.getValue().isNaN()){
-							Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
-							if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
-								drawLine(gc, point, next);
+							if (point.getValue().isInfinite()){
+								// TODO: hardcoded -10 and 10
+								drawLine(gc, new Pair<Double, Double>(point.getKey(), -10.0), new Pair<Double, Double>(point.getKey(), 10.0));
+							} else {
+								Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
+								if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
+									drawLine(gc, point, next);
+								}
 							}
 						}
 					}
@@ -375,17 +383,15 @@ public class MainApplication extends Application{
 	public static void main(String[] args){
 		launch(args);
 
-		/*Equation eq = new Equation("x^2-x+1=0");
-		System.out.println("-------------");
-		//Map<String, Double> params = new HashMap<>();
-		//params.put("x", -1.26491106);
-		List<Double> solution = eq.solve("x", null);
+		//Equation eq = new Equation("-(x)^2+(-y)=0");
+		/*System.out.println("-------------");
+		Map<String, Double> params = new HashMap<>();
+		params.put("x", 1.0);
+		List<Double> solution = eq.solve("y", params);
 		System.out.println(solution);
-		System.out.println("-------------");
+		System.out.println("-------------");*/
 
-		System.out.println(eq.getLeftSide());
-		System.out.println(eq.getRightSide());
-		System.out.println(eq.getEquation());
+		/*System.out.println(eq);
 
 		System.exit(0);*/
 	}
