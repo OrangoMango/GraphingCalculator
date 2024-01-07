@@ -56,7 +56,9 @@ public class Expression extends EquationPiece{
 		return false;
 	}
 
+	// TODO: Calculate (group) also multiple factors and multiple terms
 	public void calculate(Map<String, Double> params){
+		//System.out.println("FROM THIS: "+getString(true));
 		for (EquationPiece piece : this.pieces){
 			for (EquationPiece f : piece.getChildren()){
 				Factor factor = (Factor)f;
@@ -66,16 +68,27 @@ public class Expression extends EquationPiece{
 					double value = eval.parse();
 					if (exp != null) factor.getChildren().clear();
 					if (value < 0){
-						if (factor.getParent().prefix.equals("+")){
-							factor.getParent().prefix = "-";
-						} else {
-							factor.getParent().prefix = "+";
-						}
+						((Term)factor.getParent()).changeSign();
 					}
 					if (factor.getArgument() == null) factor.setContent(Double.toString(Math.abs(value)));
 				} catch (RuntimeException ex){}
 			}
 		}
+
+		for (EquationPiece piece : this.pieces){
+			try {
+				Evaluator eval = new Evaluator(piece.getString(true), params);
+				double value = eval.parse();
+				if (value < 0){
+					piece.prefix = "-";
+				}
+				piece.getChildren().clear();
+				Factor newFactor = new Factor(piece, this.left);
+				newFactor.setContent(Double.toString(Math.abs(value)));
+				piece.getChildren().add(newFactor);
+			} catch (RuntimeException ex){}
+		}
+		//System.out.println("TO THIS THIS: "+getString(true));
 
 		applyToChildren(expr -> expr.calculate(params));
 	}
@@ -124,7 +137,7 @@ public class Expression extends EquationPiece{
 				if (factor.getExpression() != null && factor.getExponent() != null){
 					if (factor.getExponent().prefix.equals("+")){
 						try {
-							int times = Integer.parseInt(factor.getExponent().getContent()); // TODO: ^0 = 1
+							int times = Integer.parseInt(factor.getExponent().getContent()); // TODO: ^0 = 1 -> remove
 							factor.setExponent(null);
 							for (int j = 0; j < times-1; j++){
 								Factor copy = (Factor)factor.copy(piece);
@@ -141,8 +154,8 @@ public class Expression extends EquationPiece{
 			if (piece.getChildren().size() == 1){
 				Factor f = (Factor)piece.getChildren().get(0);
 				// Remove factors that have content '0'
-				if (f.getContent() != null && f.getContent().equals("0")){ // TODO: Improve
-					//piece.getChildren().remove(f);
+				if (f.getContent() != null && f.getContent().equals("0") && this.pieces.size() > 1){
+					piece.getChildren().remove(f);
 				}
 			} else {
 				for (int i = 0; i < piece.getChildren().size(); i++){

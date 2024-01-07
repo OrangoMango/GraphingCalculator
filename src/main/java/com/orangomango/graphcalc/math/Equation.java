@@ -2,6 +2,7 @@ package com.orangomango.graphcalc.math;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.text.DecimalFormat;
 
 import com.orangomango.graphcalc.Evaluator;
 
@@ -20,12 +21,14 @@ public class Equation{
 		this.rightSide = parser.parse();
 
 		// Move everything to one side (left)
-		moveAll(t -> !t.getSide());
+		moveAll(t -> !t.getSide(), this.leftSide, this.rightSide);
 		beautify(this.leftSide);
 		beautify(this.rightSide);
 	}
 
-	public List<Double> solve(String varName, Map<String, Double> params){
+	public List<Double> solve(String varName, Map<String, Double> params){	
+		Expression expression = (Expression)this.leftSide.copy(null);
+		Expression rightCopy = (Expression)this.rightSide.copy(null);
 		//System.out.println("> "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
 		moveAll(term -> {
 			for (EquationPiece p : term.getChildren()){
@@ -37,17 +40,16 @@ public class Equation{
 				}
 			}
 			return false;
-		});
-		//System.out.println("> "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
-
-		Expression expression = (Expression)this.leftSide.copy(null);
+		}, expression, rightCopy);
+		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(true));
 		expression.calculate(params);
-		//System.out.println("> "+expression.getString(true)+"="+this.rightSide.getString(true));
+		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(true));
 		beautify(expression);
+		beautify(rightCopy);
 
 		//System.out.println("> "+expression.getString(true)+"="+this.rightSide.getString(true));
 
-		Evaluator eval = new Evaluator(this.rightSide.getString(true), params);
+		Evaluator eval = new Evaluator(rightCopy.getString(true), params);
 		double a = 0;
 		double b = 0;
 		double c = -eval.parse();
@@ -96,44 +98,44 @@ public class Equation{
 		return this.rightSide;
 	}
 
-	public void moveAll(Predicate<Term> condition){
-		for (int i = 0; i < this.leftSide.getChildren().size(); i++){
-			Term t = (Term)this.leftSide.getChildren().get(i);
+	private static void moveAll(Predicate<Term> condition, Expression leftSide, Expression rightSide){
+		for (int i = 0; i < leftSide.getChildren().size(); i++){
+			Term t = (Term)leftSide.getChildren().get(i);
 			if (!condition.test(t)){
 				t.changeSign();
 				t.moveAll(false);
-				this.leftSide.getChildren().remove(i);
+				leftSide.getChildren().remove(i);
 				i--;
-				this.rightSide.getChildren().add(t);
+				rightSide.getChildren().add(t);
 			}
 		}
-		for (int i = 0; i < this.rightSide.getChildren().size(); i++){
-			Term t = (Term)this.rightSide.getChildren().get(i);
+		for (int i = 0; i < rightSide.getChildren().size(); i++){
+			Term t = (Term)rightSide.getChildren().get(i);
 			if (condition.test(t)){
 				t.changeSign();
 				t.moveAll(true);
-				this.rightSide.getChildren().remove(i);
+				rightSide.getChildren().remove(i);
 				i--;
-				this.leftSide.getChildren().add(t);
+				leftSide.getChildren().add(t);
 			}
 		}
 
 		//System.out.println("Right after moving: "+this.leftSide.getString(true)+"="+this.rightSide.getString(true));
 		
 		// Left side or Right side could be empty
-		if (this.leftSide.getChildren().size() == 0){
-			Term newTerm = new Term(this.leftSide, true);
+		if (leftSide.getChildren().size() == 0){
+			Term newTerm = new Term(leftSide, true);
 			Factor newFactor = new Factor(newTerm, true);
 			newFactor.setContent("0");
 			newTerm.getChildren().add(newFactor);
-			this.leftSide.getChildren().add(newTerm);
+			leftSide.getChildren().add(newTerm);
 		}
-		if (this.rightSide.getChildren().size() == 0){
-			Term newTerm = new Term(this.rightSide, false);
+		if (rightSide.getChildren().size() == 0){
+			Term newTerm = new Term(rightSide, false);
 			Factor newFactor = new Factor(newTerm, false);
 			newFactor.setContent("0");
 			newTerm.getChildren().add(newFactor);
-			this.rightSide.getChildren().add(newTerm);
+			rightSide.getChildren().add(newTerm);
 		}
 	}
 
@@ -216,5 +218,32 @@ public class Equation{
 
 	public String getEquation(){
 		return this.leftSide.getString(true)+"="+this.rightSide.getString(true);
+	}
+
+	@Override
+	public String toString(){
+		String result = getEquation();
+		StringBuilder builder = new StringBuilder();
+		DecimalFormat formatter = new DecimalFormat("#.###");
+		String lastNumber = "";
+		for (int i = 0; i < result.length(); i++){
+			char c = result.charAt(i);
+			if ((c >= '0' && c <= '9') || c == '.'){
+				lastNumber += c;
+			} else {
+				if (!lastNumber.equals("")){
+					double value = Double.parseDouble(lastNumber);
+					lastNumber = "";
+					builder.append(formatter.format(value));
+				}
+				builder.append(c);
+			}
+		}
+
+		if (!lastNumber.equals("")){
+			builder.append(formatter.format(Double.parseDouble(lastNumber)));
+		}
+
+		return builder.toString();
 	}
 }

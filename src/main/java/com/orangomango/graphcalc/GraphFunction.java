@@ -42,6 +42,9 @@ public class GraphFunction{
 		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
 		System.out.println("eq: "+eq);
 		Equation equation = new Equation(eq);
+		equation.getLeftSide().rewrite();
+		//System.out.println("teq first: "+equation.getEquation());
+		equation.getLeftSide().calculate(null);
 		System.out.println("teq: "+equation.getEquation());
 		GraphFunction f = new GraphFunction(color, equation.getEquation());
 		return f;
@@ -82,6 +85,6 @@ public class GraphFunction{
 
 	@Override
 	public String toString(){
-		return this.equation.getEquation();
+		return this.equation.toString();
 	}
 }
