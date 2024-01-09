@@ -111,6 +111,7 @@ public class MainApplication extends Application{
 				}
 			});
 			ColorPicker changeColor = new ColorPicker();
+			if (this.functions.size() > 0) changeColor.setValue(this.functions.get(0).getColor());
 			changeColor.setOnAction(ev -> list.getSelectionModel().getSelectedItem().setColor(changeColor.getValue()));
 			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> changeColor.setValue(newV.getColor()));
 			content.add(new VBox(5, add, remove, changeColor), 1, 0);
@@ -381,18 +382,10 @@ public class MainApplication extends Application{
 	}
 
 	public static void main(String[] args){
-		launch(args);
+		//launch(args);
 
-		//Equation eq = new Equation("-(x)^2+(-y)=0");
-		/*System.out.println("-------------");
-		Map<String, Double> params = new HashMap<>();
-		params.put("x", 1.0);
-		List<Double> solution = eq.solve("y", params);
-		System.out.println(solution);
-		System.out.println("-------------");*/
+		Transformation t = new Transformation("0 = -x", "0 = -y");
 
-		/*System.out.println(eq);
-
-		System.exit(0);*/
+		System.exit(0);
 	}
 }
