@@ -16,6 +16,8 @@ public class Transformation{
 
 		System.out.println(eq1);
 		System.out.println(eq2);
+		System.out.println("getX(): "+getX(co1, co2));
+		System.out.println("getY(): "+getY(co1, co2));
 
 		eq1 = new Equation(getX(co1, co2)+"=0");
 		eq2 = new Equation(getY(co1, co2)+"=0");

@@ -39,6 +39,10 @@ public class Factor extends EquationPiece{
 					}
 				}
 			}
+
+			if (!append){
+				this.prefix = factor.prefix;
+			}
 		}
 	}
 

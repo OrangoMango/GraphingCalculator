@@ -147,21 +147,23 @@ public class Expression extends EquationPiece{
 			}
 		}
 
-		for (EquationPiece piece : this.pieces){
-			if (piece.getChildren().size() == 1){
-				Factor f = (Factor)piece.getChildren().get(0);
-				// Remove factors that have content '0'
-				if (f.getContent() != null && f.getContent().equals("0") && this.pieces.size() > 1){
-					piece.getChildren().remove(f);
-				}
-			} else {
-				for (int i = 0; i < piece.getChildren().size(); i++){
-					EquationPiece p = piece.getChildren().get(i);
-					// Remove factors that have a term-index > 0 and content = '1'
-					if (((Factor)p).getContent() != null && ((Factor)p).getContent().equals("1") && (p.prefix.equals("*") || p.prefix.equals("/"))){
-						piece.getChildren().remove(i);
-						i--;
-					}
+		for (int i = 0; i < this.pieces.size(); i++){
+			EquationPiece piece = this.pieces.get(i);
+			for (int j = 0; j < piece.getChildren().size(); j++){
+				Factor f = (Factor)piece.getChildren().get(j);
+				if (f.getContent() != null){
+					// Remove factors that have content '0'
+					try {
+						double x = Double.parseDouble(f.getContent());
+						if (x == 0 && this.pieces.size() > 1){
+							this.pieces.remove(i);
+							i--;
+						} else if (x == 1 && (f.prefix.equals("*") || f.prefix.equals("/"))){
+							// Remove factors that have a term-index > 0 and content = '1'
+							piece.getChildren().remove(j);
+							j--;
+						}
+					} catch (NumberFormatException ex){}
 				}
 			}
 		}
