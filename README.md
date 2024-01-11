@@ -1,1 +1,1 @@
-# GraphicalCalculator
+# Graphing Calculator
