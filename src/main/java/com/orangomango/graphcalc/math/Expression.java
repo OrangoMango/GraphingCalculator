@@ -152,9 +152,9 @@ public class Expression extends EquationPiece{
 			for (int j = 0; j < piece.getChildren().size(); j++){
 				Factor f = (Factor)piece.getChildren().get(j);
 				if (f.getContent() != null){
-					// Remove factors that have content '0'
 					try {
 						double x = Double.parseDouble(f.getContent());
+						// Remove factors that have content '0'
 						if (x == 0 && this.pieces.size() > 1){
 							this.pieces.remove(i);
 							i--;

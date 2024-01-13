@@ -5,52 +5,73 @@ import java.util.*;
 import com.orangomango.graphcalc.Evaluator;
 
 public class Transformation{
+	private String xEq, yEq;
+
 	public Transformation(String e1, String e2){
-		Equation eq1 = new Equation(e1);
-		Equation eq2 = new Equation(e2);
+		System.out.println("t: "+e1+", "+e2);
+		Equation eq1 = new Equation(e1.replace("x'", "0"));
+		Equation eq2 = new Equation(e2.replace("y'", "0"));
 
 		List<Double> co1 = getCoefficients(eq1);
-		System.out.println(co1);
 		List<Double> co2 = getCoefficients(eq2);
-		System.out.println(co2);
-
-		System.out.println(eq1);
-		System.out.println(eq2);
-		System.out.println("getX(): "+getX(co1, co2));
-		System.out.println("getY(): "+getY(co1, co2));
-
-		eq1 = new Equation(getX(co1, co2)+"=0");
-		eq2 = new Equation(getY(co1, co2)+"=0");
-
-		System.out.println(eq1);
-		System.out.println(eq2);
-	}
-
-	private String getX(List<Double> co1, List<Double> co2){
-		double a1 = co1.get(0);
-		double b1 = co1.get(1);
-		double c1 = co1.get(2);
-
-		return String.format("(x%s*(%s)%s)/%s", writeNumber(-b1), getY(co1, co2), writeNumber(-c1), a1 < 0 ? "("+a1+")" : a1);
-	}
-
-	private String getY(List<Double> co1, List<Double> co2){
-		double a1 = co1.get(0);
-		double b1 = co1.get(1);
-		double c1 = co1.get(2);
-		double a2 = co2.get(0);
-		double b2 = co2.get(1);
-		double c2 = co2.get(2);
-
-		return String.format("(%s*x%s*y%s%s)/(%s%s)", -a2, writeNumber(a1), writeNumber(a2*c1), writeNumber(-a1*c2), a1*b2, writeNumber(-a2*b1));
-	}
-
-	private String writeNumber(double num){
-		if (num >= 0){
-			return "+"+Math.abs(num);
+		System.out.println(co1+" "+co2);
+		double[][] mat = new double[][]{{co1.get(0), co1.get(1)}, {co2.get(0), co2.get(1)}}; // must be read as mat[y][x]
+		double det = mat[0][0]*mat[1][1]-mat[0][1]*mat[1][0];
+		if (det != 0){
+			double[][] result = new double[][]{{mat[1][1], -mat[1][0]}, {-mat[0][1], mat[0][0]}}; // must be read as mat[x][y]
+			String f1 = getFactor(co1.get(2), "x");
+			String f2 = getFactor(co2.get(2), "y");
+			this.xEq = getStringEq(result, det, 0, f1, f2);
+			this.yEq = getStringEq(result, det, 1, f1, f2);
 		} else {
-			return Double.toString(num);
+			throw new IllegalStateException("det is 0");
 		}
+	}
+
+	private String getFactor(double n, String l){
+		if (n == 0){
+			return l;
+		} else {
+			if (n >= 0){
+				return "("+l+"-"+Double.toString(Math.abs(n))+")";
+			} else {
+
+				return "("+l+"+"+Double.toString(Math.abs(n))+")";
+			}
+		}
+	}
+
+	public String getDefX(){
+		return this.xEq;
+	}
+
+	public String getDefY(){
+		return this.yEq;
+	}
+
+	private String getStringEq(double[][] mat, double det, int pos, String factor1, String factor2){
+		double p1 = 1/det*mat[0][pos];
+		double p2 = 1/det*mat[1][pos];
+		StringBuilder builder = new StringBuilder();
+		if (p1 != 0){
+			if (Math.abs(p1) == 1){
+				builder.append(p1 > 0 ? "" : "-").append(factor1);
+			} else {
+				builder.append(Double.toString(p1)).append("*"+factor1);
+			}
+		}
+		if (p2 != 0){
+			if (p2 < 0 || p1 != 0) builder.append(p2 >= 0 ? "+" : "-");
+			if (Math.abs(p2) == 1){
+				builder.append(factor2);
+			} else {
+				builder.append(Double.toString(Math.abs(p2))).append("*"+factor2);
+			}
+		}
+
+		String eq = builder.toString();
+		if (eq.startsWith("(") && eq.endsWith(")")) eq = eq.substring(1, eq.length()-1);
+		return eq;
 	}
 
 	private static List<Double> getCoefficients(Equation equation){

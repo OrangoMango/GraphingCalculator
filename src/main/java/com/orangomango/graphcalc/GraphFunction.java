@@ -30,8 +30,8 @@ public class GraphFunction{
 	}
 
 	public GraphFunction transform(Color color, String xEq, String yEq){
-		xEq = xEq.replace(" ", "").split("=")[1].replace("x'", "#").replace("y'", "@");
-		yEq = yEq.replace(" ", "").split("=")[1].replace("x'", "#").replace("y'", "@");
+		xEq = xEq.replace(" ", "").replace("x", "#").replace("y", "@");
+		yEq = yEq.replace(" ", "").replace("x", "#").replace("y", "@");
 		//System.out.println("From: "+this.equation.getEquation());
 		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
 		System.out.println("eq: "+eq);

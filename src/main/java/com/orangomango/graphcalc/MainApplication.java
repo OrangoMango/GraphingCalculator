@@ -176,8 +176,8 @@ public class MainApplication extends Application{
 			}
 			box.getSelectionModel().select(0);
 			ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
-			Label xPrime = new Label("x = "); // TODO: Invert to x'=
-			Label yPrime = new Label("y = ");
+			Label xPrime = new Label("x' = ");
+			Label yPrime = new Label("y' = ");
 			TextField xEq = new TextField();
 			TextField yEq = new TextField();
 			gpane.add(box, 0, 0, 2, 1);
@@ -188,7 +188,8 @@ public class MainApplication extends Application{
 			gpane.add(yEq, 1, 3);
 			alert.getDialogPane().setContent(gpane);
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
-				GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), "x="+xEq.getText(), "y="+yEq.getText());
+				Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
+				GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
 				GraphFunction.addFunction(this.functions, transformed);
 			});
 		});
@@ -382,10 +383,6 @@ public class MainApplication extends Application{
 	}
 
 	public static void main(String[] args){
-		//launch(args);
-
-		Transformation t = new Transformation("0 = -x", "0 = -y");
-
-		System.exit(0);
+		launch(args);
 	}
 }
