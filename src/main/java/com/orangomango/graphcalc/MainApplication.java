@@ -14,6 +14,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.util.Pair;
 import javafx.util.Callback;
 
@@ -32,6 +33,7 @@ public class MainApplication extends Application{
 	private List<GraphFunction> functions = new ArrayList<>();
 	private double cameraX, cameraY;
 	private double scaleFactor = 40;
+	private double oldMouseX, oldMouseY;
 
 	@Override
 	public void start(Stage stage){
@@ -217,6 +219,20 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
+		canvas.setOnMousePressed(e -> {
+			this.oldMouseX = e.getX();
+			this.oldMouseY = e.getY();
+		});
+
+		canvas.setOnMouseDragged(e -> {
+			if (e.getButton() == MouseButton.PRIMARY){
+				this.cameraX += this.oldMouseX-e.getX();
+				this.cameraY += this.oldMouseY-e.getY();
+				this.oldMouseX = e.getX();
+				this.oldMouseY = e.getY();
+			}
+		});
+
 		/*GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
 		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2/4+y^2=1"));
 		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
@@ -279,20 +295,7 @@ public class MainApplication extends Application{
 		gc.setFill(Color.web("#F0F0F0"));
 		gc.fillRect(0, 0, WIDTH, HEIGHT);
 
-		final int cameraSpeed = 8;
-		if (this.keys.getOrDefault(KeyCode.W, false)){
-			this.cameraY -= cameraSpeed;
-			this.keys.put(KeyCode.W, false);
-		} else if (this.keys.getOrDefault(KeyCode.A, false)){
-			this.cameraX -= cameraSpeed;
-			this.keys.put(KeyCode.A, false);
-		} else if (this.keys.getOrDefault(KeyCode.S, false)){
-			this.cameraY += cameraSpeed;
-			this.keys.put(KeyCode.S, false);
-		} else if (this.keys.getOrDefault(KeyCode.D, false)){
-			this.cameraX += cameraSpeed;
-			this.keys.put(KeyCode.D, false);
-		} else if (this.keys.getOrDefault(KeyCode.ESCAPE, false)){
+		if (this.keys.getOrDefault(KeyCode.ESCAPE, false)){
 			System.exit(0);
 		}
 
