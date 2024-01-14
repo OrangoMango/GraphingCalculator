@@ -26,7 +26,7 @@ public class MainApplication extends Application{
 	private static final int WIDTH = 800;
 	private static final int HEIGHT = 600;
 	private static final int FPS = 40;
-	private static final int MAX_INTERSECTION_COUNT = 15;
+	private static final int MAX_INTERSECTION_COUNT = 60;
 
 	private HashMap<KeyCode, Boolean> keys = new HashMap<>();
 	private int frames, fps;
@@ -115,7 +115,9 @@ public class MainApplication extends Application{
 			ColorPicker changeColor = new ColorPicker();
 			if (this.functions.size() > 0) changeColor.setValue(this.functions.get(0).getColor());
 			changeColor.setOnAction(ev -> list.getSelectionModel().getSelectedItem().setColor(changeColor.getValue()));
-			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> changeColor.setValue(newV.getColor()));
+			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> {
+				if (newV != null) changeColor.setValue(newV.getColor());
+			});
 			content.add(new VBox(5, add, remove, changeColor), 1, 0);
 			alert.showAndWait();
 		});
@@ -233,18 +235,13 @@ public class MainApplication extends Application{
 			}
 		});
 
-		/*GraphFunction.addFunction(this.functions, new GraphFunction(Color.GREEN, "x^2+y^2=9"));
-		GraphFunction.addFunction(this.functions, new GraphFunction(Color.BLUE, "x^2/4+y^2=1"));
-		GraphFunction.addFunction(this.functions, this.functions.get(1).transform(Color.RED, "x = x'*cos(PI/4)-y'*sin(PI/4)", "y = x'*sin(PI/4)+y'*cos(PI/4)"));
-		GraphFunction.addFunction(this.functions, this.functions.get(0).transform(Color.CYAN, "x = x'-2", "y = y'-2"));
-		GraphFunction.addFunction(this.functions, this.functions.get(2).transform(Color.ORANGE, "x = -x'", "y = y'"));*/
-
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
 			public void handle(long time){
 				update(gc);
 				MainApplication.this.frames++;
 				stage.setTitle("Graphing calculator - FPS:"+MainApplication.this.fps); // Set FPS title
+				// TODO: change cursor
 			}
 		};
 		timer.start();
@@ -272,22 +269,47 @@ public class MainApplication extends Application{
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> result = new ArrayList<>();
 
-		/*for (double i = -10; i < 10; i += 0.001){
-			List<Double> y1 = f1.solveForY(i);
-			List<Double> y2 = f2.solveForY(i);
+		for (double i = -10; i < 10; i += 0.001){
+			Map<String, Double> params = new HashMap<>();
+			params.put("x", i);
+			List<Double> y1 = f1.getEquation().solve("y", params);
+			List<Double> y2 = f2.getEquation().solve("y", params);
 
 			for (int j = 0; j < y1.size(); j++){
 				for (int k = 0; k < y2.size(); k++){
 					double delta = Math.abs(y1.get(j)-y2.get(k));
 					if (delta < 0.1){
-						//System.out.format("Possible solution: %s\n", i);
+						//System.out.println("sol: "+i);
 						result.add(i);
 					}
 				}
 			}
-		}*/
+		}
 
-		return result;
+		List<List<Double>> intervals = new ArrayList<>();
+		List<Double> current = new ArrayList<>();
+		Double lastStep = Double.NaN;
+		for (int i = 1; i < result.size(); i++){
+			double prev = result.get(i-1);
+			double value = result.get(i);
+			current.add(value);
+			if (!lastStep.isNaN()){
+				double diff = value-prev-lastStep;
+				if (diff > 0.01 || i == result.size()-1){
+					intervals.add(current);
+					current = new ArrayList<>();
+				}
+			}
+			lastStep = value-prev;
+		}
+
+		if (intervals.size() == 1 && intervals.get(0).size() > MAX_INTERSECTION_COUNT){
+			System.out.println(intervals);
+			System.out.println(intervals.stream().map(l -> l.get(l.size()/2)).toList());
+			return null;
+		}
+
+		return intervals.stream().map(l -> l.get(l.size()/2)).toList();
 	}
 
 	private void update(GraphicsContext gc){

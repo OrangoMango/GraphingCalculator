@@ -32,15 +32,10 @@ public class GraphFunction{
 	public GraphFunction transform(Color color, String xEq, String yEq){
 		xEq = xEq.replace(" ", "").replace("x", "#").replace("y", "@");
 		yEq = yEq.replace(" ", "").replace("x", "#").replace("y", "@");
-		//System.out.println("From: "+this.equation.getEquation());
 		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
-		System.out.println("eq: "+eq);
 		Equation equation = new Equation(eq);
-		System.out.println("eq then: "+equation.getEquation());
 		equation.getLeftSide().rewrite();
-		System.out.println("teq first: "+equation.getEquation());
 		equation.getLeftSide().calculate(null);
-		System.out.println("teq: "+equation.getEquation());
 		GraphFunction f = new GraphFunction(color, equation.getEquation());
 		return f;
 	}
@@ -72,6 +67,10 @@ public class GraphFunction{
 		if (this.quadratic){
 			this.results.add(new Result(from, to, step, values2));
 		}
+	}
+
+	public Equation getEquation(){
+		return this.equation;
 	}
 
 	public Color getColor(){
