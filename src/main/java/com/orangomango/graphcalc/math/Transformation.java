@@ -8,13 +8,11 @@ public class Transformation{
 	private String xEq, yEq;
 
 	public Transformation(String e1, String e2){
-		System.out.println("t: "+e1+", "+e2);
 		Equation eq1 = new Equation(e1.replace("x'", "0"));
 		Equation eq2 = new Equation(e2.replace("y'", "0"));
 
 		List<Double> co1 = getCoefficients(eq1);
 		List<Double> co2 = getCoefficients(eq2);
-		System.out.println(co1+" "+co2);
 		double[][] mat = new double[][]{{co1.get(0), co1.get(1)}, {co2.get(0), co2.get(1)}}; // must be read as mat[y][x]
 		double det = mat[0][0]*mat[1][1]-mat[0][1]*mat[1][0];
 		if (det != 0){

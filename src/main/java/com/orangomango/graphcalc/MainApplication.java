@@ -3,6 +3,7 @@ package com.orangomango.graphcalc;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
+import javafx.scene.Cursor;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.canvas.*;
@@ -23,8 +24,8 @@ import java.util.*;
 import com.orangomango.graphcalc.math.*;
 
 public class MainApplication extends Application{
-	private static final int WIDTH = 800;
-	private static final int HEIGHT = 600;
+	private static final int WIDTH = 1000;
+	private static final int HEIGHT = 800;
 	private static final int FPS = 40;
 	private static final int MAX_INTERSECTION_COUNT = 60;
 
@@ -34,6 +35,7 @@ public class MainApplication extends Application{
 	private double cameraX, cameraY;
 	private double scaleFactor = 40;
 	private double oldMouseX, oldMouseY;
+	private boolean movingScene;
 
 	@Override
 	public void start(Stage stage){
@@ -54,13 +56,15 @@ public class MainApplication extends Application{
 			alert.setTitle("Edit");
 			alert.setHeaderText("Edit graphs");
 			GridPane content = new GridPane();
-			content.setPrefWidth(350);
-			content.setPrefHeight(150);
+			content.setPrefWidth(600);
+			content.setPrefHeight(350);
 			alert.getDialogPane().setContent(content);
 			content.setPadding(new Insets(5, 5, 5, 5));
 			content.setHgap(5);
 			content.setVgap(5);
 			ListView<GraphFunction> list = new ListView<>();
+			list.setMinWidth(400);
+			list.setMinHeight(300);
 			list.setCellFactory(param -> new ListCell<>(){
 				@Override
 				public void updateItem(GraphFunction func, boolean empty){
@@ -74,10 +78,7 @@ public class MainApplication extends Application{
 					}
 				}
 			});
-			for (GraphFunction f : this.functions){
-				list.getItems().add(f);
-			}
-
+			list.getItems().addAll(this.functions);
 			list.getSelectionModel().select(0);
 			content.add(list, 0, 0);
 			Button add = new Button("Add");
@@ -131,13 +132,9 @@ public class MainApplication extends Application{
 			gpane.setVgap(5);
 			gpane.setHgap(5);
 			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
-			for (GraphFunction f : this.functions){
-				box.getItems().add(f);
-			}
+			box.getItems().addAll(this.functions);
 			ChoiceBox<GraphFunction> box2 = new ChoiceBox<>();
-			for (GraphFunction f : this.functions){
-				box2.getItems().add(f);
-			}
+			box2.getItems().addAll(this.functions);
 			box.setMinWidth(150);
 			box2.setMinWidth(150);
 			if (this.functions.size() > 0) box.getSelectionModel().select(0);
@@ -175,9 +172,7 @@ public class MainApplication extends Application{
 			gpane.setVgap(5);
 			gpane.setHgap(5);
 			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
-			for (GraphFunction f : this.functions){
-				box.getItems().add(f);
-			}
+			box.getItems().addAll(this.functions);
 			box.getSelectionModel().select(0);
 			ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
 			Label xPrime = new Label("x' = ");
@@ -232,16 +227,26 @@ public class MainApplication extends Application{
 				this.cameraY += this.oldMouseY-e.getY();
 				this.oldMouseX = e.getX();
 				this.oldMouseY = e.getY();
+				this.movingScene = true;
 			}
 		});
 
+		canvas.setOnMouseReleased(e -> {
+			this.movingScene = false;
+		});
+
+		Scene scene = new Scene(pane, WIDTH+20, HEIGHT+50);
 		AnimationTimer timer = new AnimationTimer(){
 			@Override
 			public void handle(long time){
 				update(gc);
 				MainApplication.this.frames++;
 				stage.setTitle("Graphing calculator - FPS:"+MainApplication.this.fps); // Set FPS title
-				// TODO: change cursor
+				if (MainApplication.this.movingScene){
+					scene.setCursor(Cursor.MOVE);
+				} else {
+					scene.setCursor(Cursor.DEFAULT);
+				}
 			}
 		};
 		timer.start();
@@ -260,7 +265,6 @@ public class MainApplication extends Application{
 		fpsCounter.setDaemon(true);
 		fpsCounter.start();
 
-		Scene scene = new Scene(pane, WIDTH+20, HEIGHT+50);
 		stage.setScene(scene);
 		stage.setResizable(false);
 		stage.show();
@@ -314,7 +318,7 @@ public class MainApplication extends Application{
 
 	private void update(GraphicsContext gc){
 		gc.clearRect(0, 0, WIDTH, HEIGHT);
-		gc.setFill(Color.web("#F0F0F0"));
+		gc.setFill(Color.web("#D6D6D6"));
 		gc.fillRect(0, 0, WIDTH, HEIGHT);
 
 		if (this.keys.getOrDefault(KeyCode.ESCAPE, false)){

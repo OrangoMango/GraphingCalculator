@@ -26,11 +26,11 @@ public class Equation{
 		beautify(this.rightSide);
 	}
 
+	// TODO: Solve any kind of equation, also trigonometric ones
 	public List<Double> solve(String varName, Map<String, Double> params){	
 		Expression expression = (Expression)this.leftSide.copy(null);
 		Expression rightCopy = (Expression)this.rightSide.copy(null);
 
-		// TODO: to improve performance, apply the moveAll function only once
 		moveAll(term -> {
 			for (EquationPiece p : term.getChildren()){
 				Factor f = (Factor)p;
@@ -44,8 +44,6 @@ public class Equation{
 		expression.calculate(params);
 		beautify(expression);
 		beautify(rightCopy);
-
-		//System.out.println("> "+expression.getString(true)+"="+rightCopy.getString(false));
 
 		Evaluator eval = new Evaluator(rightCopy.getString(true), params);
 		double a = 0;
