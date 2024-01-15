@@ -9,6 +9,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.canvas.*;
 import javafx.scene.control.*;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -28,6 +29,7 @@ public class MainApplication extends Application{
 	private static final int HEIGHT = 800;
 	private static final int FPS = 40;
 	private static final int MAX_INTERSECTION_COUNT = 60;
+	private static final Font FONT = new Font("sans-serif", 15);
 
 	private HashMap<KeyCode, Boolean> keys = new HashMap<>();
 	private int frames, fps;
@@ -36,6 +38,8 @@ public class MainApplication extends Application{
 	private double scaleFactor = 40;
 	private double oldMouseX, oldMouseY;
 	private boolean movingScene;
+	private Point2D mouseCoord = Point2D.ZERO;
+	private Pair<GraphFunction, Pair<Double, Double>> hoveringPoint;
 
 	@Override
 	public void start(Stage stage){
@@ -216,6 +220,25 @@ public class MainApplication extends Application{
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
 		});
 
+		canvas.setOnMouseMoved(e -> {
+			double x = (e.getX()-WIDTH/2+this.cameraX)/this.scaleFactor;
+			double y = -(e.getY()-HEIGHT/2+this.cameraY)/this.scaleFactor;
+			this.mouseCoord = new Point2D(x, y);
+			Pair<GraphFunction, Pair<Double, Double>> found = null;
+			fLoop:
+			for (GraphFunction f : this.functions){
+				for (Result r : f.getResults()){
+					for (Pair<Double, Double> pair : r.getValues()){
+						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.2 && Math.abs(pair.getValue()-y) < 0.2){
+							found = new Pair<>(f, pair);
+							break fLoop;
+						}
+					}
+				}
+			}
+			this.hoveringPoint = found;
+		});
+
 		canvas.setOnMousePressed(e -> {
 			this.oldMouseX = e.getX();
 			this.oldMouseY = e.getY();
@@ -336,7 +359,7 @@ public class MainApplication extends Application{
 
 		// Numbers
 		gc.setFill(Color.BLACK);
-		gc.setFont(new Font("sans-serif", 15));
+		gc.setFont(FONT);
 		gc.setTextAlign(TextAlignment.CENTER);
 		double numStep = 40/this.scaleFactor;
 
@@ -404,7 +427,24 @@ public class MainApplication extends Application{
 				}
 			}
 		}
+
+		if (this.hoveringPoint != null){
+			gc.setFill(this.hoveringPoint.getKey().getColor());
+			gc.fillOval(WIDTH/2+this.hoveringPoint.getValue().getKey()*this.scaleFactor-5, HEIGHT/2-this.hoveringPoint.getValue().getValue()*this.scaleFactor-5, 10, 10);
+		}
+
 		gc.restore();
+
+		// User information
+		gc.setFill(Color.BLACK);
+		gc.setFont(FONT);
+		gc.setTextAlign(TextAlignment.LEFT);
+		StringBuilder builder = new StringBuilder();
+		builder.append(String.format("Mouse at: %.2f %.2f", this.mouseCoord.getX(), this.mouseCoord.getY()));
+		if (this.hoveringPoint != null){
+			builder.append(String.format("\nHovering at [%s], x=%.2f y=%.2f", this.hoveringPoint.getKey().getEquation(), this.hoveringPoint.getValue().getKey(), this.hoveringPoint.getValue().getValue()));
+		}
+		gc.fillText(builder.toString(), 20, 30);
 	}
 
 	private void drawLine(GraphicsContext gc, Pair<Double, Double> point, Pair<Double, Double> next){
