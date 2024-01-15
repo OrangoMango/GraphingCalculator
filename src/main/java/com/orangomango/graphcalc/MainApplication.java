@@ -21,6 +21,7 @@ import javafx.util.Pair;
 import javafx.util.Callback;
 
 import java.util.*;
+import java.io.*;
 
 import com.orangomango.graphcalc.math.*;
 
@@ -102,10 +103,14 @@ public class MainApplication extends Application{
 				field.requestFocus();
 				dialog.getDialogPane().setContent(gpane);
 				dialog.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
-					synchronized (this){
-						GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-						GraphFunction.addFunction(this.functions, f);
-						list.getItems().add(f);
+					try {
+						synchronized (this){
+							GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
+							GraphFunction.addFunction(this.functions, f);
+							list.getItems().add(f);
+						}
+					} catch (Exception ex){
+						displayError(ex);
 					}
 				});
 			});
@@ -148,20 +153,24 @@ public class MainApplication extends Application{
 			alert.getDialogPane().setContent(gpane);
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 				// Calculate the result
-				Alert info = new Alert(Alert.AlertType.INFORMATION);
-				info.setTitle("Result");
-				info.setHeaderText("Intersections found:");
-				List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
-				StringBuilder builder = new StringBuilder();
-				if (output == null){
-					builder.append("The two equations intersect in at least "+MAX_INTERSECTION_COUNT+" points");
-				} else if (output.size() == 0){
-					builder.append("No intersection");
-				} else {
-					output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+				try {
+					Alert info = new Alert(Alert.AlertType.INFORMATION);
+					info.setTitle("Result");
+					info.setHeaderText("Intersections found:");
+					List<Double> output = findIntersections(box.getSelectionModel().getSelectedItem(), box2.getSelectionModel().getSelectedItem());
+					StringBuilder builder = new StringBuilder();
+					if (output == null){
+						builder.append("The two equations intersect in at least "+MAX_INTERSECTION_COUNT+" points");
+					} else if (output.size() == 0){
+						builder.append("No intersection");
+					} else {
+						output.stream().forEach(d -> builder.append(String.format("x = %.3f\n", d)));
+					}
+					info.setContentText(builder.toString());
+					info.showAndWait();
+				} catch (Exception ex){
+					displayError(ex);
 				}
-				info.setContentText(builder.toString());
-				info.showAndWait();
 			});
 		});
 
@@ -191,9 +200,13 @@ public class MainApplication extends Application{
 			gpane.add(yEq, 1, 3);
 			alert.getDialogPane().setContent(gpane);
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
-				Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
-				GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
-				GraphFunction.addFunction(this.functions, transformed);
+				try {
+					Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
+					GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
+					GraphFunction.addFunction(this.functions, transformed);
+				} catch (Exception ex){
+					displayError(ex);
+				}
 			});
 		});
 
@@ -229,7 +242,7 @@ public class MainApplication extends Application{
 			for (GraphFunction f : this.functions){
 				for (Result r : f.getResults()){
 					for (Pair<Double, Double> pair : r.getValues()){
-						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.2 && Math.abs(pair.getValue()-y) < 0.2){
+						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.1 && Math.abs(pair.getValue()-y) < 0.1){
 							found = new Pair<>(f, pair);
 							break fLoop;
 						}
@@ -337,6 +350,23 @@ public class MainApplication extends Application{
 		}
 
 		return intervals.stream().map(l -> l.get(l.size()/2)).toList();
+	}
+
+	private static void displayError(Exception ex){
+		Alert err = new Alert(Alert.AlertType.ERROR);
+		err.setTitle("Error");
+		err.setHeaderText("An error occured");
+		err.setContentText(ex.getMessage());
+		Label label = new Label("Stacktrace:");
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw);
+		ex.printStackTrace(pw);
+		TextArea area = new TextArea(sw.toString());
+		area.setMinWidth(600);
+		area.setMinHeight(200);
+		area.setEditable(false);
+		err.getDialogPane().setExpandableContent(new VBox(5, label, area));
+		err.showAndWait();
 	}
 
 	private void update(GraphicsContext gc){
