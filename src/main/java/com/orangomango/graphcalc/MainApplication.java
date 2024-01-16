@@ -41,6 +41,7 @@ public class MainApplication extends Application{
 	private boolean movingScene;
 	private Point2D mouseCoord = Point2D.ZERO;
 	private Pair<GraphFunction, Pair<Double, Double>> hoveringPoint;
+	private double topPos, rightPos, bottomPos, leftPos;
 
 	@Override
 	public void start(Stage stage){
@@ -100,13 +101,13 @@ public class MainApplication extends Application{
 				gpane.add(label, 0, 0);
 				gpane.add(field, 1, 0);
 				gpane.add(picker, 0, 1, 2, 1);
-				field.requestFocus();
+				field.requestFocus(); // TODO requestFocus()
 				dialog.getDialogPane().setContent(gpane);
 				dialog.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 					try {
 						synchronized (this){
 							GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-							GraphFunction.addFunction(this.functions, f);
+							GraphFunction.addFunction(this.functions, f, this.topPos, this.rightPos, this.bottomPos, this.leftPos);
 							list.getItems().add(f);
 						}
 					} catch (Exception ex){
@@ -203,7 +204,7 @@ public class MainApplication extends Application{
 				try {
 					Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
 					GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
-					GraphFunction.addFunction(this.functions, transformed);
+					GraphFunction.addFunction(this.functions, transformed, this.topPos, this.rightPos, this.bottomPos, this.leftPos);
 				} catch (Exception ex){
 					displayError(ex);
 				}
@@ -264,6 +265,11 @@ public class MainApplication extends Application{
 				this.oldMouseX = e.getX();
 				this.oldMouseY = e.getY();
 				this.movingScene = true;
+
+				// Update the results
+				/*for (GraphFunction f : this.functions){
+					f.buildInterval(this.leftPos, this.rightPos, this.bottomPos, this.topPos, GraphFunction.FUNCTION_INTERVAL);
+				}*/
 			}
 		});
 
@@ -309,7 +315,7 @@ public class MainApplication extends Application{
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> result = new ArrayList<>();
 
-		for (double i = -10; i < 10; i += 0.001){
+		for (double i = this.leftPos; i < this.rightPos; i += 0.001){
 			Map<String, Double> params = new HashMap<>();
 			params.put("x", i);
 			List<Double> y1 = f1.getEquation().solve("y", params);
@@ -394,19 +400,24 @@ public class MainApplication extends Application{
 		double numStep = 40/this.scaleFactor;
 
 		// Positive X
-		for (double x = 0; x < (this.cameraX+WIDTH/2)/this.scaleFactor; x += numStep){
+		this.rightPos =  (this.cameraX+WIDTH/2)/this.scaleFactor;
+		// Negative X
+		this.leftPos = -(WIDTH-(this.cameraX+WIDTH/2))/this.scaleFactor;
+		// Positive Y
+		this.topPos = (HEIGHT-(this.cameraY+HEIGHT/2))/this.scaleFactor;
+		// Negative Y
+		this.bottomPos = -(this.cameraY+HEIGHT/2)/this.scaleFactor;
+
+		for (double x = 0; x < this.rightPos; x += numStep){
 			gc.fillText(String.format("%.1f", x), WIDTH/2+x*this.scaleFactor, HEIGHT/2+17);
 		}
-		// Negative X
-		for (double x = numStep; x < (WIDTH-(this.cameraX+WIDTH/2))/this.scaleFactor; x += numStep){
+		for (double x = numStep; x < -this.leftPos; x += numStep){
 			gc.fillText(String.format("%.1f", -x), WIDTH/2-x*this.scaleFactor, HEIGHT/2+17);
 		}
-		// Positive Y
-		for (double y = numStep; y < (HEIGHT-(this.cameraY+HEIGHT/2))/this.scaleFactor; y += numStep){
+		for (double y = numStep; y < this.topPos; y += numStep){
 			gc.fillText(String.format("%.1f", y), WIDTH/2+17, HEIGHT/2-y*this.scaleFactor);
 		}
-		// Negative Y
-		for (double y = numStep; y < (this.cameraY+HEIGHT/2)/this.scaleFactor; y += numStep){
+		for (double y = numStep; y < -this.bottomPos; y += numStep){
 			gc.fillText(String.format("%.1f", -y), WIDTH/2+17, HEIGHT/2+y*this.scaleFactor);
 		}
 
@@ -420,8 +431,7 @@ public class MainApplication extends Application{
 						Pair<Double, Double> point = result.get(i);
 						if (point.getValue() != null && !point.getValue().isNaN()){
 							if (point.getValue().isInfinite()){
-								// TODO: hardcoded -10 and 10
-								drawLine(gc, new Pair<Double, Double>(point.getKey(), -10.0), new Pair<Double, Double>(point.getKey(), 10.0));
+								drawLine(gc, new Pair<Double, Double>(point.getKey(), this.topPos), new Pair<Double, Double>(point.getKey(), this.bottomPos));
 							} else {
 								Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
 								if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
@@ -470,7 +480,8 @@ public class MainApplication extends Application{
 		gc.setFont(FONT);
 		gc.setTextAlign(TextAlignment.LEFT);
 		StringBuilder builder = new StringBuilder();
-		builder.append(String.format("Mouse at: %.2f %.2f", this.mouseCoord.getX(), this.mouseCoord.getY()));
+		builder.append(String.format("Mouse at: %.2f %.2f\n", this.mouseCoord.getX(), this.mouseCoord.getY()));
+		builder.append(String.format("NESW: %.2f %.2f %.2f %.2f", this.topPos, this.rightPos, this.bottomPos, this.leftPos));
 		if (this.hoveringPoint != null){
 			builder.append(String.format("\nHovering at [%s], x=%.2f y=%.2f", this.hoveringPoint.getKey().getEquation(), this.hoveringPoint.getValue().getKey(), this.hoveringPoint.getValue().getValue()));
 		}

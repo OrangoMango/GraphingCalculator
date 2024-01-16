@@ -14,14 +14,16 @@ public class GraphFunction{
 	private String a, b;
 	private boolean quadratic = false;
 
+	public static final double FUNCTION_INTERVAL = 0.005;
+
 	public GraphFunction(Color color, String f){
 		this.color = color;
 		this.equation = new Equation(f);
 		this.quadratic = this.equation.getEquation().contains("y^2");
 	}
 
-	public static void addFunction(List<GraphFunction> list, GraphFunction f){
-		f.buildInterval(-10, 10, 0.005, -10, 10);
+	public static void addFunction(List<GraphFunction> list, GraphFunction f, double tp, double rp, double bp, double lp){
+		f.buildInterval(lp, rp, bp, tp, FUNCTION_INTERVAL);
 		list.add(f);
 	}
 
@@ -34,13 +36,12 @@ public class GraphFunction{
 		yEq = yEq.replace(" ", "").replace("x", "#").replace("y", "@");
 		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
 		Equation equation = new Equation(eq);
-		equation.getLeftSide().rewrite();
 		equation.getLeftSide().calculate(null);
 		GraphFunction f = new GraphFunction(color, equation.getEquation());
 		return f;
 	}
 
-	public void buildInterval(double from, double to, double step, double minY, double maxY){
+	public void buildInterval(double from, double to, double minY, double maxY, double step){
 		List<Pair<Double, Double>> values1 = new ArrayList<>();
 		List<Pair<Double, Double>> values2 = new ArrayList<>();
 		for (double i = from; i <= to; i += step){

@@ -154,8 +154,8 @@ public class Expression extends EquationPiece{
 				if (f.getContent() != null){
 					try {
 						double x = Double.parseDouble(f.getContent());
-						// Remove factors that have content '0'
 						if (x == 0 && this.pieces.size() > 1){
+							// Remove factors that have content '0'
 							this.pieces.remove(i);
 							i--;
 						} else if (x == 1 && (f.prefix.equals("*") || f.prefix.equals("/"))){
