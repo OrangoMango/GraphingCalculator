@@ -22,8 +22,8 @@ public class GraphFunction{
 		this.quadratic = this.equation.getEquation().contains("y^2");
 	}
 
-	public static void addFunction(List<GraphFunction> list, GraphFunction f, double tp, double rp, double bp, double lp){
-		f.buildInterval(lp, rp, bp, tp, FUNCTION_INTERVAL);
+	public static void addFunction(List<GraphFunction> list, GraphFunction f, double lp, double rp){
+		f.buildInterval(lp, rp);
 		list.add(f);
 	}
 
@@ -41,32 +41,88 @@ public class GraphFunction{
 		return f;
 	}
 
-	public void buildInterval(double from, double to, double minY, double maxY, double step){
+	private void buildInterval(double from, double to){
 		List<Pair<Double, Double>> values1 = new ArrayList<>();
 		List<Pair<Double, Double>> values2 = new ArrayList<>();
-		for (double i = from; i <= to; i += step){
+		for (double i = from; i <= to; i += FUNCTION_INTERVAL){
 			Map<String, Double> params = new HashMap<>();
 			params.put("x", i);
 			List<Double> output = this.equation.solve("y", params);
 
 			// y1
-			if (output.get(0) > minY && output.get(0) < maxY){
+			if (Double.isFinite(output.get(0))){
 				values1.add(new Pair<Double, Double>(i, output.get(0)));
 			} else {
 				values1.add(new Pair<Double, Double>(i, output.get(0).isInfinite() ? output.get(0) : null));
 			}
 
 			// y2
-			if (output.size() > 1 && output.get(1) > minY && output.get(1) < maxY){
+			if (output.size() > 1 && Double.isFinite(output.get(1))){
 				values2.add(new Pair<Double, Double>(i, output.get(1)));
 			} else {
 				values2.add(new Pair<Double, Double>(i, null));
 			}
 		}
 
-		this.results.add(new Result(from, to, step, values1));
+		this.results.add(new Result(from, to, values1));
 		if (this.quadratic){
-			this.results.add(new Result(from, to, step, values2));
+			this.results.add(new Result(from, to, values2));
+		}
+	}
+
+	public void expand(double from, double to){
+		boolean firstDone = false;
+		for (Result result : this.results){
+			if (Math.abs(result.getFrom()-from) < FUNCTION_INTERVAL && Math.abs(to-result.getTo()) < FUNCTION_INTERVAL){
+				firstDone = true;
+				continue;
+			}
+
+			int startIndex = -1;
+			int endIndex = -1;
+			for (int i = 0; i < result.getValues().size(); i++){
+				Pair<Double, Double> pair = result.getValues().get(i);
+				if (pair.getKey() < from){
+					startIndex = i;
+				}
+				if (pair.getKey() > to && endIndex == -1){
+					endIndex = i;
+				}
+			}
+
+			if (startIndex != -1) result.getValues().subList(0, startIndex).clear();
+			if (endIndex != -1) result.getValues().subList(endIndex, result.getValues().size()).clear();
+
+			// LEFT
+			for (double i = result.getFrom()-FUNCTION_INTERVAL; i >= from; i -= FUNCTION_INTERVAL){
+				Map<String, Double> params = new HashMap<>();
+				params.put("x", i);
+				Double solution = this.equation.solve("y", params).get(firstDone ? 1 : 0);
+
+				if (Double.isFinite(solution)){
+					result.getValues().add(0, new Pair<Double, Double>(i, solution));
+				} else {
+					result.getValues().add(0, new Pair<Double, Double>(i, solution.isInfinite() ? solution : null));
+				}
+			}
+
+			// RIGHT
+			for (double i = result.getTo()+FUNCTION_INTERVAL; i <= to; i += FUNCTION_INTERVAL){
+				Map<String, Double> params = new HashMap<>();
+				params.put("x", i);
+				Double solution = this.equation.solve("y", params).get(firstDone ? 1 : 0);
+
+				if (Double.isFinite(solution)){
+					result.getValues().add(new Pair<Double, Double>(i, solution));
+				} else {
+					result.getValues().add(new Pair<Double, Double>(i, solution.isInfinite() ? solution : null));
+				}
+			}
+
+			result.setFrom(from);
+			result.setTo(to);
+
+			firstDone = true;
 		}
 	}
 

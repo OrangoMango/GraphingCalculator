@@ -41,7 +41,7 @@ public class MainApplication extends Application{
 	private boolean movingScene;
 	private Point2D mouseCoord = Point2D.ZERO;
 	private Pair<GraphFunction, Pair<Double, Double>> hoveringPoint;
-	private double topPos, rightPos, bottomPos, leftPos;
+	private double leftPos, rightPos, topPos, bottomPos;
 
 	@Override
 	public void start(Stage stage){
@@ -107,7 +107,7 @@ public class MainApplication extends Application{
 					try {
 						synchronized (this){
 							GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-							GraphFunction.addFunction(this.functions, f, this.topPos, this.rightPos, this.bottomPos, this.leftPos);
+							GraphFunction.addFunction(this.functions, f, this.leftPos, this.rightPos);
 							list.getItems().add(f);
 						}
 					} catch (Exception ex){
@@ -204,7 +204,7 @@ public class MainApplication extends Application{
 				try {
 					Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
 					GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
-					GraphFunction.addFunction(this.functions, transformed, this.topPos, this.rightPos, this.bottomPos, this.leftPos);
+					GraphFunction.addFunction(this.functions, transformed, this.leftPos, this.rightPos);
 				} catch (Exception ex){
 					displayError(ex);
 				}
@@ -267,9 +267,9 @@ public class MainApplication extends Application{
 				this.movingScene = true;
 
 				// Update the results
-				/*for (GraphFunction f : this.functions){
-					f.buildInterval(this.leftPos, this.rightPos, this.bottomPos, this.topPos, GraphFunction.FUNCTION_INTERVAL);
-				}*/
+				for (GraphFunction f : this.functions){
+					f.expand(this.leftPos, this.rightPos);
+				}
 			}
 		});
 
@@ -399,13 +399,9 @@ public class MainApplication extends Application{
 		gc.setTextAlign(TextAlignment.CENTER);
 		double numStep = 40/this.scaleFactor;
 
-		// Positive X
-		this.rightPos =  (this.cameraX+WIDTH/2)/this.scaleFactor;
-		// Negative X
 		this.leftPos = -(WIDTH-(this.cameraX+WIDTH/2))/this.scaleFactor;
-		// Positive Y
+		this.rightPos =  (this.cameraX+WIDTH/2)/this.scaleFactor;
 		this.topPos = (HEIGHT-(this.cameraY+HEIGHT/2))/this.scaleFactor;
-		// Negative Y
 		this.bottomPos = -(this.cameraY+HEIGHT/2)/this.scaleFactor;
 
 		for (double x = 0; x < this.rightPos; x += numStep){
@@ -434,8 +430,10 @@ public class MainApplication extends Application{
 								drawLine(gc, new Pair<Double, Double>(point.getKey(), this.topPos), new Pair<Double, Double>(point.getKey(), this.bottomPos));
 							} else {
 								Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
-								if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
-									drawLine(gc, point, next);
+								if (point.getValue() < this.topPos+1 && point.getValue() > this.bottomPos-1){
+									if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
+										drawLine(gc, point, next);
+									}
 								}
 							}
 						}
