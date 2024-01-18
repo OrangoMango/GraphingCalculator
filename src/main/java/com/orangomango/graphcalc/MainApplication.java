@@ -331,7 +331,7 @@ public class MainApplication extends Application{
 			for (int j = 0; j < y1.size(); j++){
 				for (int k = 0; k < y2.size(); k++){
 					double delta = Math.abs(y1.get(j)-y2.get(k));
-					if (delta < 0.1){
+					if (delta < 0.1 || Double.isInfinite(delta)){
 						//System.out.println("sol: "+i);
 						result.add(i);
 					}
@@ -356,7 +356,9 @@ public class MainApplication extends Application{
 			lastStep = value-prev;
 		}
 
-		if (intervals.size() == 1 && intervals.get(0).size() > MAX_INTERSECTION_COUNT){
+		if (result.size() == 1){
+			return result;
+		} else if (intervals.size() == 1 && intervals.get(0).size() > MAX_INTERSECTION_COUNT){
 			System.out.println(intervals);
 			System.out.println(intervals.stream().map(l -> l.get(l.size()/2)).toList());
 			return null;
