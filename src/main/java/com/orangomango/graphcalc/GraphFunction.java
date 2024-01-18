@@ -22,8 +22,8 @@ public class GraphFunction{
 		this.quadratic = this.equation.getEquation().contains("y^2");
 	}
 
-	public static void addFunction(List<GraphFunction> list, GraphFunction f, double lp, double rp){
-		f.buildInterval(lp, rp);
+	public static void addFunction(List<GraphFunction> list, GraphFunction f, double lp, double rp, Map<String, Double> params){
+		f.buildInterval(lp, rp, params);
 		list.add(f);
 	}
 
@@ -41,13 +41,18 @@ public class GraphFunction{
 		return f;
 	}
 
-	private void buildInterval(double from, double to){
+	private void buildInterval(double from, double to, Map<String, Double> args){
 		List<Pair<Double, Double>> values1 = new ArrayList<>();
 		List<Pair<Double, Double>> values2 = new ArrayList<>();
+
+		Expression expression = (Expression)this.equation.getLeftSide().copy(null);
+		Expression rightCopy = (Expression)this.equation.getRightSide().copy(null);
+		Equation.prepareForSolving(expression, rightCopy, "y", args);
+
 		for (double i = from; i <= to; i += FUNCTION_INTERVAL){
-			Map<String, Double> params = new HashMap<>();
+			Map<String, Double> params = new HashMap<>(args);
 			params.put("x", i);
-			List<Double> output = this.equation.solve("y", params);
+			List<Double> output = Equation.solve(expression, rightCopy, "y", params);
 
 			// y1
 			if (Double.isFinite(output.get(0))){
@@ -70,7 +75,7 @@ public class GraphFunction{
 		}
 	}
 
-	public void expand(double from, double to){
+	public void expand(double from, double to, Map<String, Double> args){
 		boolean firstDone = false;
 		for (Result result : this.results){
 			if (Math.abs(result.getFrom()-from) < FUNCTION_INTERVAL && Math.abs(to-result.getTo()) < FUNCTION_INTERVAL){
@@ -92,12 +97,15 @@ public class GraphFunction{
 
 			if (startIndex != -1) result.getValues().subList(0, startIndex).clear();
 			if (endIndex != -1) result.getValues().subList(endIndex, result.getValues().size()).clear();
+			Expression expression = (Expression)this.equation.getLeftSide().copy(null);
+			Expression rightCopy = (Expression)this.equation.getRightSide().copy(null);
+			Equation.prepareForSolving(expression, rightCopy, "y", args);
 
 			// LEFT
 			for (double i = result.getFrom()-FUNCTION_INTERVAL; i >= from; i -= FUNCTION_INTERVAL){
-				Map<String, Double> params = new HashMap<>();
+				Map<String, Double> params = new HashMap<>(args);
 				params.put("x", i);
-				Double solution = this.equation.solve("y", params).get(firstDone ? 1 : 0);
+				Double solution = Equation.solve(expression, rightCopy, "y", params).get(firstDone ? 1 : 0);
 
 				if (Double.isFinite(solution)){
 					result.getValues().add(0, new Pair<Double, Double>(i, solution));
@@ -108,9 +116,9 @@ public class GraphFunction{
 
 			// RIGHT
 			for (double i = result.getTo()+FUNCTION_INTERVAL; i <= to; i += FUNCTION_INTERVAL){
-				Map<String, Double> params = new HashMap<>();
+				Map<String, Double> params = new HashMap<>(args);
 				params.put("x", i);
-				Double solution = this.equation.solve("y", params).get(firstDone ? 1 : 0);
+				Double solution = Equation.solve(expression, rightCopy, "y", params).get(firstDone ? 1 : 0);
 
 				if (Double.isFinite(solution)){
 					result.getValues().add(new Pair<Double, Double>(i, solution));

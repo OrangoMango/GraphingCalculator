@@ -32,7 +32,7 @@ public class MainApplication extends Application{
 	private static final int MAX_INTERSECTION_COUNT = 60;
 	private static final Font FONT = new Font("sans-serif", 15);
 
-	private HashMap<KeyCode, Boolean> keys = new HashMap<>();
+	private Map<KeyCode, Boolean> keys = new HashMap<>();
 	private int frames, fps;
 	private List<GraphFunction> functions = new ArrayList<>();
 	private double cameraX, cameraY;
@@ -42,6 +42,7 @@ public class MainApplication extends Application{
 	private Point2D mouseCoord = Point2D.ZERO;
 	private Pair<GraphFunction, Pair<Double, Double>> hoveringPoint;
 	private double leftPos, rightPos, topPos, bottomPos;
+	private Map<String, Double> parameters = new HashMap<>();
 
 	@Override
 	public void start(Stage stage){
@@ -107,7 +108,7 @@ public class MainApplication extends Application{
 					try {
 						synchronized (this){
 							GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-							GraphFunction.addFunction(this.functions, f, this.leftPos, this.rightPos);
+							GraphFunction.addFunction(this.functions, f, this.leftPos, this.rightPos, this.parameters);
 							list.getItems().add(f);
 						}
 					} catch (Exception ex){
@@ -204,7 +205,7 @@ public class MainApplication extends Application{
 				try {
 					Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
 					GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
-					GraphFunction.addFunction(this.functions, transformed, this.leftPos, this.rightPos);
+					GraphFunction.addFunction(this.functions, transformed, this.leftPos, this.rightPos, this.parameters);
 				} catch (Exception ex){
 					displayError(ex);
 				}
@@ -268,7 +269,7 @@ public class MainApplication extends Application{
 
 				// Update the results
 				for (GraphFunction f : this.functions){
-					f.expand(this.leftPos, this.rightPos);
+					f.expand(this.leftPos, this.rightPos, this.parameters);
 				}
 			}
 		});
@@ -314,12 +315,18 @@ public class MainApplication extends Application{
 
 	private List<Double> findIntersections(GraphFunction f1, GraphFunction f2){
 		List<Double> result = new ArrayList<>();
+		Expression eq1R = (Expression)f1.getEquation().getLeftSide().copy(null);
+		Expression eq1L = (Expression)f1.getEquation().getRightSide().copy(null);
+		Equation.prepareForSolving(eq1R, eq1L, "y", this.parameters);
+		Expression eq2R = (Expression)f2.getEquation().getLeftSide().copy(null);
+		Expression eq2L = (Expression)f2.getEquation().getRightSide().copy(null);
+		Equation.prepareForSolving(eq2R, eq2L, "y", this.parameters);
 
 		for (double i = this.leftPos; i < this.rightPos; i += 0.001){
-			Map<String, Double> params = new HashMap<>();
+			Map<String, Double> params = new HashMap<>(this.parameters);
 			params.put("x", i);
-			List<Double> y1 = f1.getEquation().solve("y", params);
-			List<Double> y2 = f2.getEquation().solve("y", params);
+			List<Double> y1 = Equation.solve(eq1R, eq1L, "y", params);
+			List<Double> y2 = Equation.solve(eq2R, eq2L, "y", params);
 
 			for (int j = 0; j < y1.size(); j++){
 				for (int k = 0; k < y2.size(); k++){

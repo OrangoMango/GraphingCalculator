@@ -27,25 +27,8 @@ public class Equation{
 	}
 
 	// TODO: Solve any kind of equation, also trigonometric ones
-	public List<Double> solve(String varName, Map<String, Double> params){	
-		Expression expression = (Expression)this.leftSide.copy(null);
-		Expression rightCopy = (Expression)this.rightSide.copy(null);
-
-		moveAll(term -> {
-			for (EquationPiece p : term.getChildren()){
-				Factor f = (Factor)p;
-				if (f.getContent() != null && f.getContent().equals(varName)){
-					return true;
-				}
-			}
-			return false;
-		}, expression, rightCopy);
-
-		expression.calculate(params);
-		beautify(expression);
-		beautify(rightCopy);
-
-		Evaluator eval = new Evaluator(rightCopy.getString(true), params);
+	public static List<Double> solve(Expression expression, Expression rightCopy, String varName, Map<String, Double> params){
+		Evaluator eval = new Evaluator(rightCopy.getString(true), params); // All terms with varName must be on the left and the other ones on the right
 		double a = 0;
 		double b = 0;
 		double c = -eval.parse();
@@ -90,6 +73,22 @@ public class Equation{
 		}
 
 		return output;
+	}
+
+	public static void prepareForSolving(Expression expression, Expression rightCopy, String varName, Map<String, Double> params){
+		moveAll(term -> {
+			for (EquationPiece p : term.getChildren()){
+				Factor f = (Factor)p;
+				if (f.getContent() != null && f.getContent().equals(varName)){
+					return true;
+				}
+			}
+			return false;
+		}, expression, rightCopy);
+
+		expression.calculate(params);
+		beautify(expression);
+		beautify(rightCopy);
 	}
 
 	public Expression getLeftSide(){
