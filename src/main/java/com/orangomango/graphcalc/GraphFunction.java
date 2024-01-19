@@ -1,5 +1,6 @@
 package com.orangomango.graphcalc;
 
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.util.Pair;
 
@@ -7,9 +8,8 @@ import java.util.*;
 
 import com.orangomango.graphcalc.math.*;
 
-public class GraphFunction{
+public class GraphFunction extends GraphElement implements Transformable{
 	private List<Result> results = new ArrayList<>();
-	private Color color;
 	private Equation equation;
 	private String a, b;
 	private boolean quadratic = false;
@@ -17,21 +17,18 @@ public class GraphFunction{
 	public static final double FUNCTION_INTERVAL = 0.005;
 
 	public GraphFunction(Color color, String f){
-		this.color = color;
+		super(color);
 		this.equation = new Equation(f);
 		this.quadratic = this.equation.getEquation().contains("y^2");
 	}
 
-	public static void addFunction(List<GraphFunction> list, GraphFunction f, double lp, double rp, Map<String, Double> params){
+	public static void addFunction(List<GraphElement> list, GraphFunction f, double lp, double rp, Map<String, Double> params){
 		f.buildInterval(lp, rp, params);
 		list.add(f);
 	}
 
-	public static void removeFunction(List<GraphFunction> list, GraphFunction f){
-		list.remove(f);
-	}
-
-	public GraphFunction transform(Color color, String xEq, String yEq){
+	@Override
+	public GraphElement transform(Color color, String xEq, String yEq){
 		xEq = xEq.replace(" ", "").replace("x", "#").replace("y", "@");
 		yEq = yEq.replace(" ", "").replace("x", "#").replace("y", "@");
 		String eq = this.equation.getEquation().replace("x", "("+xEq+")").replace("y", "("+yEq+")").replace("#", "x").replace("@", "y");
@@ -39,6 +36,16 @@ public class GraphFunction{
 		equation.getLeftSide().calculate(null);
 		GraphFunction f = new GraphFunction(color, equation.getEquation());
 		return f;
+	}
+
+	@Override
+	public void edit(String f, Map<String, Double> params){
+		this.equation = new Equation(f);
+		this.quadratic = this.equation.getEquation().contains("y^2");
+		double from = this.results.get(0).getFrom();
+		double to = this.results.get(0).getTo();
+		this.results.clear();
+		buildInterval(from, to, params);
 	}
 
 	private void buildInterval(double from, double to, Map<String, Double> args){
@@ -96,7 +103,7 @@ public class GraphFunction{
 			}
 
 			if (startIndex != -1) result.getValues().subList(0, startIndex).clear();
-			if (endIndex != -1) result.getValues().subList(endIndex, result.getValues().size()).clear();
+			if (endIndex != -1) result.getValues().subList(startIndex != -1 ? endIndex-startIndex : endIndex, result.getValues().size()).clear();
 			Expression expression = (Expression)this.equation.getLeftSide().copy(null);
 			Expression rightCopy = (Expression)this.equation.getRightSide().copy(null);
 			Equation.prepareForSolving(expression, rightCopy, "y", args);
@@ -134,24 +141,63 @@ public class GraphFunction{
 		}
 	}
 
+	@Override
+	public void render(GraphicsContext gc, double topPos, double bottomPos, double scaleFactor){
+		gc.setStroke(this.color);
+		for (Result rs : this.results){
+			List<Pair<Double, Double>> result = rs.getValues();
+			for (int i = 0; i < result.size(); i++){
+				Pair<Double, Double> point = result.get(i);
+				if (point.getValue() != null && !point.getValue().isNaN()){
+					if (point.getValue().isInfinite()){
+						drawLine(gc, new Pair<Double, Double>(point.getKey(), topPos), new Pair<Double, Double>(point.getKey(), bottomPos), scaleFactor);
+					} else {
+						Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
+						if (point.getValue() < topPos+1 && point.getValue() > bottomPos-1){
+							if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
+								drawLine(gc, point, next, scaleFactor);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Connect the bounds of the results if it's a quadratic equation
+		if (this.quadratic){
+			for (int i = 0; i < this.results.get(0).getValues().size(); i++){
+				Double y1 = this.results.get(0).getValues().get(i).getValue();
+				Double y2 = this.results.get(1).getValues().get(i).getValue();
+				if (y1 != null && y2 != null && Math.abs(y1-y2) < 1){ // TODO: Check function's trend instead of < 1
+					if (i < this.results.get(0).getValues().size()-1){
+						Double ny1 = this.results.get(0).getValues().get(i+1).getValue();
+						Double ny2 = this.results.get(1).getValues().get(i+1).getValue();
+						if (ny1 == null && ny2 == null){
+							drawLine(gc, this.results.get(0).getValues().get(i), this.results.get(1).getValues().get(i), scaleFactor);
+						}
+					}
+					if (i > 0){
+						Double py1 = this.results.get(0).getValues().get(i-1).getValue();
+						Double py2 = this.results.get(1).getValues().get(i-1).getValue();
+						if (py1 == null && py2 == null){
+							drawLine(gc, this.results.get(0).getValues().get(i), this.results.get(1).getValues().get(i), scaleFactor);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private static void drawLine(GraphicsContext gc, Pair<Double, Double> point, Pair<Double, Double> next, double scaleFactor){
+		gc.strokeLine(MainApplication.WIDTH/2+point.getKey()*scaleFactor, MainApplication.HEIGHT/2-point.getValue()*scaleFactor, MainApplication.WIDTH/2+next.getKey()*scaleFactor, MainApplication.HEIGHT/2-next.getValue()*scaleFactor);
+	}
+
 	public Equation getEquation(){
 		return this.equation;
 	}
 
-	public Color getColor(){
-		return this.color;
-	}
-
-	public void setColor(Color color){
-		this.color = color;
-	}
-
 	public List<Result> getResults(){
 		return this.results;
-	}
-
-	public boolean isQuadratic(){
-		return this.quadratic;
 	}
 
 	@Override

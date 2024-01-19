@@ -1,6 +1,7 @@
 package com.orangomango.graphcalc;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.Cursor;
@@ -26,15 +27,15 @@ import java.io.*;
 import com.orangomango.graphcalc.math.*;
 
 public class MainApplication extends Application{
-	private static final int WIDTH = 1000;
-	private static final int HEIGHT = 800;
+	public static final int WIDTH = 1000;
+	public static final int HEIGHT = 800;
 	private static final int FPS = 40;
 	private static final int MAX_INTERSECTION_COUNT = 60;
-	private static final Font FONT = new Font("sans-serif", 15);
+	public static final Font FONT = new Font("sans-serif", 15);
 
 	private Map<KeyCode, Boolean> keys = new HashMap<>();
 	private int frames, fps;
-	private List<GraphFunction> functions = new ArrayList<>();
+	private List<GraphElement> elements = new ArrayList<>();
 	private double cameraX, cameraY;
 	private double scaleFactor = 40;
 	private double oldMouseX, oldMouseY;
@@ -69,23 +70,23 @@ public class MainApplication extends Application{
 			content.setPadding(new Insets(5, 5, 5, 5));
 			content.setHgap(5);
 			content.setVgap(5);
-			ListView<GraphFunction> list = new ListView<>();
+			ListView<GraphElement> list = new ListView<>();
 			list.setMinWidth(400);
 			list.setMinHeight(300);
 			list.setCellFactory(param -> new ListCell<>(){
 				@Override
-				public void updateItem(GraphFunction func, boolean empty){
-					super.updateItem(func, empty);
+				public void updateItem(GraphElement element, boolean empty){
+					super.updateItem(element, empty);
 					if (empty){
 						setText(null);
 						setGraphic(null);
-					} else if (func != null){
-						setText(func.toString());
-						setGraphic(new Rectangle(15, 15, func.getColor()));
+					} else if (element != null){
+						setText(element.toString());
+						setGraphic(new Rectangle(15, 15, element.getColor()));
 					}
 				}
 			});
-			list.getItems().addAll(this.functions);
+			list.getItems().addAll(this.elements);
 			list.getSelectionModel().select(0);
 			content.add(list, 0, 0);
 			Button add = new Button("Add");
@@ -102,14 +103,30 @@ public class MainApplication extends Application{
 				gpane.add(label, 0, 0);
 				gpane.add(field, 1, 0);
 				gpane.add(picker, 0, 1, 2, 1);
-				field.requestFocus(); // TODO requestFocus()
+				dialog.setOnShown(eve -> Platform.runLater(field::requestFocus));
 				dialog.getDialogPane().setContent(gpane);
 				dialog.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 					try {
+						String text = field.getText();
 						synchronized (this){
-							GraphFunction f = new GraphFunction(picker.getValue(), field.getText());
-							GraphFunction.addFunction(this.functions, f, this.leftPos, this.rightPos, this.parameters);
-							list.getItems().add(f);
+							if (text.contains("=")){
+								GraphFunction f = new GraphFunction(picker.getValue(), text);
+								GraphFunction.addFunction(this.elements, f, this.leftPos, this.rightPos, this.parameters);
+								list.getItems().add(f);
+							} else {
+								if (text.startsWith("LINE")){
+									final String data = text.substring(5, text.length()-1);
+									GraphPoint a = (GraphPoint)this.elements.stream().filter(ele -> ele instanceof GraphPoint && ((GraphPoint)ele).getName().equals(data.split(",")[0].trim())).findAny().orElse(null);
+									GraphPoint b = (GraphPoint)this.elements.stream().filter(ele -> ele instanceof GraphPoint && ((GraphPoint)ele).getName().equals(data.split(",")[1].trim())).findAny().orElse(null);
+									GraphLine l = new GraphLine(picker.getValue(), a, b);
+									this.elements.add(l);
+									list.getItems().add(l);
+								} else {
+									GraphPoint p = new GraphPoint(picker.getValue(), text);
+									this.elements.add(p);
+									list.getItems().add(p);
+								}
+							}
 						}
 					} catch (Exception ex){
 						displayError(ex);
@@ -118,19 +135,43 @@ public class MainApplication extends Application{
 			});
 			Button remove = new Button("Remove");
 			remove.setOnAction(ev -> {
-				GraphFunction selected = list.getSelectionModel().getSelectedItem();
-				synchronized (this){
-					GraphFunction.removeFunction(this.functions, selected);
-					list.getItems().remove(selected);
+				GraphElement selected = list.getSelectionModel().getSelectedItem();
+				if (selected != null){
+					synchronized (this){
+						this.elements.remove(selected);
+						list.getItems().remove(selected);
+					}
+				}
+			});
+			Button edit = new Button("Edit");
+			edit.setOnAction(ev -> {
+				GraphElement selected = list.getSelectionModel().getSelectedItem();
+				if (selected != null){
+					try {
+						TextInputDialog input = new TextInputDialog(selected.toString());
+						input.setTitle("Edit");
+						input.setHeaderText("Edit equation");
+						input.showAndWait().ifPresent(v -> {
+							selected.edit(v, this.parameters);
+							list.refresh();
+						});
+					} catch (Exception ex){
+						displayError(ex);
+					}
 				}
 			});
 			ColorPicker changeColor = new ColorPicker();
-			if (this.functions.size() > 0) changeColor.setValue(this.functions.get(0).getColor());
-			changeColor.setOnAction(ev -> list.getSelectionModel().getSelectedItem().setColor(changeColor.getValue()));
+			if (this.elements.size() > 0) changeColor.setValue(this.elements.get(0).getColor());
+			changeColor.setOnAction(ev -> {
+				GraphElement selected = list.getSelectionModel().getSelectedItem();
+				if (selected != null){
+					selected.setColor(changeColor.getValue());
+				}
+			});
 			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> {
 				if (newV != null) changeColor.setValue(newV.getColor());
 			});
-			content.add(new VBox(5, add, remove, changeColor), 1, 0);
+			content.add(new VBox(5, add, remove, edit, changeColor), 1, 0);
 			alert.showAndWait();
 		});
 		MenuItem calculate = new MenuItem("Find intersection");
@@ -143,13 +184,13 @@ public class MainApplication extends Application{
 			gpane.setVgap(5);
 			gpane.setHgap(5);
 			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
-			box.getItems().addAll(this.functions);
+			box.getItems().addAll(this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList());
 			ChoiceBox<GraphFunction> box2 = new ChoiceBox<>();
-			box2.getItems().addAll(this.functions);
+			box2.getItems().addAll(this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList());
 			box.setMinWidth(150);
 			box2.setMinWidth(150);
-			if (this.functions.size() > 0) box.getSelectionModel().select(0);
-			if (this.functions.size() > 0) box2.getSelectionModel().select(this.functions.size() < 2 ? 0 : 1);
+			if (this.elements.size() > 0) box.getSelectionModel().select(0);
+			if (this.elements.size() > 0) box2.getSelectionModel().select(this.elements.size() < 2 ? 0 : 1);
 			gpane.add(box, 0, 0);
 			gpane.add(box2, 0, 1);
 			alert.getDialogPane().setContent(gpane);
@@ -186,8 +227,8 @@ public class MainApplication extends Application{
 			gpane.setPadding(new Insets(5, 5, 5, 5));
 			gpane.setVgap(5);
 			gpane.setHgap(5);
-			ChoiceBox<GraphFunction> box = new ChoiceBox<>();
-			box.getItems().addAll(this.functions);
+			ChoiceBox<Transformable> box = new ChoiceBox<>();
+			box.getItems().addAll(this.elements.stream().filter(tr -> tr instanceof Transformable).map(tr -> (Transformable)tr).toList());
 			box.getSelectionModel().select(0);
 			ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
 			Label xPrime = new Label("x' = ");
@@ -203,9 +244,17 @@ public class MainApplication extends Application{
 			alert.getDialogPane().setContent(gpane);
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 				try {
-					Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
-					GraphFunction transformed = box.getSelectionModel().getSelectedItem().transform(picker.getValue(), t.getDefX(), t.getDefY());
-					GraphFunction.addFunction(this.functions, transformed, this.leftPos, this.rightPos, this.parameters);
+					synchronized (this){
+						Transformable selected = box.getSelectionModel().getSelectedItem();
+						if (selected instanceof GraphFunction){
+							Transformation t = new Transformation("x'="+xEq.getText(), "y'="+yEq.getText());
+							GraphElement transformed = selected.transform(picker.getValue(), t.getDefX(), t.getDefY());
+							GraphFunction.addFunction(this.elements, (GraphFunction)transformed, this.leftPos, this.rightPos, this.parameters);
+						} else {
+							GraphElement transformed = selected.transform(picker.getValue(), xEq.getText(), yEq.getText());
+							this.elements.add(transformed);
+						}
+					}
 				} catch (Exception ex){
 					displayError(ex);
 				}
@@ -233,6 +282,10 @@ public class MainApplication extends Application{
 			}
 
 			this.scaleFactor = Math.min(120, Math.max(this.scaleFactor, 20));
+			// Update the results
+			for (GraphFunction f : this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList()){
+				f.expand(this.leftPos, this.rightPos, this.parameters);
+			}
 		});
 
 		canvas.setOnMouseMoved(e -> {
@@ -241,7 +294,7 @@ public class MainApplication extends Application{
 			this.mouseCoord = new Point2D(x, y);
 			Pair<GraphFunction, Pair<Double, Double>> found = null;
 			fLoop:
-			for (GraphFunction f : this.functions){
+			for (GraphFunction f : this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList()){
 				for (Result r : f.getResults()){
 					for (Pair<Double, Double> pair : r.getValues()){
 						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.1 && Math.abs(pair.getValue()-y) < 0.1){
@@ -257,6 +310,12 @@ public class MainApplication extends Application{
 		canvas.setOnMousePressed(e -> {
 			this.oldMouseX = e.getX();
 			this.oldMouseY = e.getY();
+			if (e.getButton() == MouseButton.PRIMARY){
+				if (this.hoveringPoint != null){
+					// TODO
+					System.out.println(this.hoveringPoint.getKey());
+				}
+			}
 		});
 
 		canvas.setOnMouseDragged(e -> {
@@ -268,7 +327,7 @@ public class MainApplication extends Application{
 				this.movingScene = true;
 
 				// Update the results
-				for (GraphFunction f : this.functions){
+				for (GraphFunction f : this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList()){
 					f.expand(this.leftPos, this.rightPos, this.parameters);
 				}
 			}
@@ -428,49 +487,16 @@ public class MainApplication extends Application{
 
 		synchronized (this){
 			gc.setLineWidth(1.5);
-			for (GraphFunction func : this.functions){
-				gc.setStroke(func.getColor());
-				for (Result rs : func.getResults()){
-					List<Pair<Double, Double>> result = rs.getValues();
-					for (int i = 0; i < result.size(); i++){
-						Pair<Double, Double> point = result.get(i);
-						if (point.getValue() != null && !point.getValue().isNaN()){
-							if (point.getValue().isInfinite()){
-								drawLine(gc, new Pair<Double, Double>(point.getKey(), this.topPos), new Pair<Double, Double>(point.getKey(), this.bottomPos));
-							} else {
-								Pair<Double, Double> next = i == result.size()-1 ? null : result.get(i+1);
-								if (point.getValue() < this.topPos+1 && point.getValue() > this.bottomPos-1){
-									if (next != null && next.getValue() != null && !next.getValue().isNaN() && Math.abs(next.getValue()) < Integer.MAX_VALUE){
-										drawLine(gc, point, next);
-									}
-								}
-							}
-						}
-					}
+			for (GraphElement element : this.elements){
+				if (!(element instanceof GraphPoint)){
+					element.render(gc, this.topPos, this.bottomPos, this.scaleFactor);
 				}
+			}
 
-				// Connect the bounds of the results if it's a quadratic equation
-				if (func.isQuadratic()){
-					for (int i = 0; i < func.getResults().get(0).getValues().size(); i++){
-						Double y1 = func.getResults().get(0).getValues().get(i).getValue();
-						Double y2 = func.getResults().get(1).getValues().get(i).getValue();
-						if (y1 != null && y2 != null && Math.abs(y1-y2) < 1){ // TODO: Check function's trend instead of < 1
-							if (i < func.getResults().get(0).getValues().size()-1){
-								Double ny1 = func.getResults().get(0).getValues().get(i+1).getValue();
-								Double ny2 = func.getResults().get(1).getValues().get(i+1).getValue();
-								if (ny1 == null && ny2 == null){
-									drawLine(gc, func.getResults().get(0).getValues().get(i), func.getResults().get(1).getValues().get(i));
-								}
-							}
-							if (i > 0){
-								Double py1 = func.getResults().get(0).getValues().get(i-1).getValue();
-								Double py2 = func.getResults().get(1).getValues().get(i-1).getValue();
-								if (py1 == null && py2 == null){
-									drawLine(gc, func.getResults().get(0).getValues().get(i), func.getResults().get(1).getValues().get(i));
-								}
-							}
-						}
-					}
+			// Points are rendered later
+			for (GraphElement element : this.elements){
+				if (element instanceof GraphPoint){
+					element.render(gc, this.topPos, this.bottomPos, this.scaleFactor);
 				}
 			}
 		}
@@ -493,10 +519,6 @@ public class MainApplication extends Application{
 			builder.append(String.format("\nHovering at [%s], x=%.2f y=%.2f", this.hoveringPoint.getKey().getEquation(), this.hoveringPoint.getValue().getKey(), this.hoveringPoint.getValue().getValue()));
 		}
 		gc.fillText(builder.toString(), 20, 30);
-	}
-
-	private void drawLine(GraphicsContext gc, Pair<Double, Double> point, Pair<Double, Double> next){
-		gc.strokeLine(WIDTH/2+point.getKey()*this.scaleFactor, HEIGHT/2-point.getValue()*this.scaleFactor, WIDTH/2+next.getKey()*this.scaleFactor, HEIGHT/2-next.getValue()*this.scaleFactor);
 	}
 
 	public static void main(String[] args){
