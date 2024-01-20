@@ -30,7 +30,7 @@ public class MainApplication extends Application{
 	public static final int WIDTH = 1000;
 	public static final int HEIGHT = 800;
 	private static final int FPS = 40;
-	private static final int MAX_INTERSECTION_COUNT = 60;
+	private static final int MAX_INTERSECTION_COUNT = 100;
 	public static final Font FONT = new Font("sans-serif", 15);
 
 	private Map<KeyCode, Boolean> keys = new HashMap<>();
@@ -93,6 +93,7 @@ public class MainApplication extends Application{
 			add.setOnAction(ev -> {
 				Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
 				dialog.setTitle("Add equation");
+				dialog.setHeaderText("Add equation");
 				GridPane gpane = new GridPane();
 				gpane.setPadding(new Insets(5, 5, 5, 5));
 				gpane.setHgap(5);
@@ -166,6 +167,7 @@ public class MainApplication extends Application{
 				GraphElement selected = list.getSelectionModel().getSelectedItem();
 				if (selected != null){
 					selected.setColor(changeColor.getValue());
+					list.refresh();
 				}
 			});
 			list.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> {
@@ -189,10 +191,16 @@ public class MainApplication extends Application{
 			box2.getItems().addAll(this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList());
 			box.setMinWidth(150);
 			box2.setMinWidth(150);
-			if (this.elements.size() > 0) box.getSelectionModel().select(0);
-			if (this.elements.size() > 0) box2.getSelectionModel().select(this.elements.size() < 2 ? 0 : 1);
+			box.getSelectionModel().select(0);
+			box2.getSelectionModel().select(box.getItems().size() < 2 ? 0 : 1);
+			Rectangle rec1 = new Rectangle(25, 25, box.getItems().size() > 0 ? box.getItems().get(0).getColor() : Color.WHITE);
+			Rectangle rec2 = new Rectangle(25, 25, box2.getSelectionModel().getSelectedItem() != null ? box2.getSelectionModel().getSelectedItem().getColor() : Color.WHITE);
+			box.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> rec1.setFill(newV.getColor()));
+			box2.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> rec2.setFill(newV.getColor()));
 			gpane.add(box, 0, 0);
 			gpane.add(box2, 0, 1);
+			gpane.add(rec1, 1, 0);
+			gpane.add(rec2, 1, 1);
 			alert.getDialogPane().setContent(gpane);
 			alert.showAndWait().filter(bt -> bt == ButtonType.OK).ifPresent(bt -> {
 				// Calculate the result
@@ -223,6 +231,7 @@ public class MainApplication extends Application{
 		applyTransform.setOnAction(e -> {
 			Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
 			alert.setTitle("Apply transformation");
+			alert.setHeaderText("Transform");
 			GridPane gpane = new GridPane();
 			gpane.setPadding(new Insets(5, 5, 5, 5));
 			gpane.setVgap(5);
@@ -230,12 +239,17 @@ public class MainApplication extends Application{
 			ChoiceBox<Transformable> box = new ChoiceBox<>();
 			box.getItems().addAll(this.elements.stream().filter(tr -> tr instanceof Transformable).map(tr -> (Transformable)tr).toList());
 			box.getSelectionModel().select(0);
+			Rectangle rec = new Rectangle(25, 25, box.getItems().size() > 0 ? ((GraphElement)box.getItems().get(0)).getColor() : Color.WHITE);
+			box.getSelectionModel().selectedItemProperty().addListener((ob, oldV, newV) -> rec.setFill(((GraphElement)newV).getColor()));
 			ColorPicker picker = new ColorPicker(Color.color(Math.random(), Math.random(), Math.random()));
 			Label xPrime = new Label("x' = ");
 			Label yPrime = new Label("y' = ");
 			TextField xEq = new TextField();
 			TextField yEq = new TextField();
+			xEq.setPromptText("x+5");
+			yEq.setPromptText("2*y-1");
 			gpane.add(box, 0, 0, 2, 1);
+			gpane.add(rec, 2, 0);
 			gpane.add(picker, 0, 1, 2, 1);
 			gpane.add(xPrime, 0, 2);
 			gpane.add(yPrime, 0, 3);
@@ -297,8 +311,8 @@ public class MainApplication extends Application{
 			for (GraphFunction f : this.elements.stream().filter(gel -> gel instanceof GraphFunction).map(gel -> (GraphFunction)gel).toList()){
 				for (Result r : f.getResults()){
 					for (Pair<Double, Double> pair : r.getValues()){
-						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.1 && Math.abs(pair.getValue()-y) < 0.1){
-							found = new Pair<>(f, pair);
+						if (pair.getValue() != null && Math.abs(pair.getKey()-x) < 0.1 && (pair.getValue().isInfinite() || Math.abs(pair.getValue()-y) < 0.1)){
+							found = new Pair<>(f, pair.getValue().isInfinite() ? new Pair<>(pair.getKey(), y) : pair);
 							break fLoop;
 						}
 					}
@@ -381,7 +395,7 @@ public class MainApplication extends Application{
 		Expression eq2L = (Expression)f2.getEquation().getRightSide().copy(null);
 		Equation.prepareForSolving(eq2R, eq2L, "y", this.parameters);
 
-		for (double i = this.leftPos; i < this.rightPos; i += 0.001){
+		for (double i = f1.getResults().get(0).getFrom(); i < f1.getResults().get(0).getTo(); i += 0.001){
 			Map<String, Double> params = new HashMap<>(this.parameters);
 			params.put("x", i);
 			List<Double> y1 = Equation.solve(eq1R, eq1L, "y", params);
@@ -390,7 +404,7 @@ public class MainApplication extends Application{
 			for (int j = 0; j < y1.size(); j++){
 				for (int k = 0; k < y2.size(); k++){
 					double delta = Math.abs(y1.get(j)-y2.get(k));
-					if (delta < 0.1 || Double.isInfinite(delta)){
+					if (delta < 0.1 || Double.isInfinite(y1.get(j)) || Double.isInfinite(y2.get(k))){
 						//System.out.println("sol: "+i);
 						result.add(i);
 					}

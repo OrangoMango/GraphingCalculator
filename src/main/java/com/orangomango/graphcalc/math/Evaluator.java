@@ -1,8 +1,6 @@
-package com.orangomango.graphcalc;
+package com.orangomango.graphcalc.math;
 
 import java.util.*;
-
-import static com.orangomango.graphcalc.math.Equation.formatExponential;
 
 public class Evaluator{
 	private String expression;
@@ -10,7 +8,7 @@ public class Evaluator{
 	private Map<String, Double> variables;
 
 	public Evaluator(String input, Map<String, Double> vars){
-		this.expression = formatExponential(input.replace(" ", ""));
+		this.expression = Equation.formatExponential(input.replace(" ", ""));
 		this.variables = vars;
 	}
 

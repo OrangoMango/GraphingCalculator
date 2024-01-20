@@ -3,8 +3,6 @@ package com.orangomango.graphcalc.math;
 import java.util.*;
 import java.util.function.Consumer;
 
-import com.orangomango.graphcalc.Evaluator;
-
 public class Expression extends EquationPiece{
 	public Expression(EquationPiece parent, boolean left){
 		super(parent, left);

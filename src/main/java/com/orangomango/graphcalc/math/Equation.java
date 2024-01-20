@@ -4,8 +4,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.text.DecimalFormat;
 
-import com.orangomango.graphcalc.Evaluator;
-
 public class Equation{
 	private Expression leftSide, rightSide;
 

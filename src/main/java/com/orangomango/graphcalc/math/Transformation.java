@@ -2,8 +2,6 @@ package com.orangomango.graphcalc.math;
 
 import java.util.*;
 
-import com.orangomango.graphcalc.Evaluator;
-
 public class Transformation{
 	private String xEq, yEq;
 

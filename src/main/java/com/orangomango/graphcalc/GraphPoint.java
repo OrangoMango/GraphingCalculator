@@ -8,9 +8,11 @@ import javafx.geometry.Point2D;
 import java.util.*;
 import java.text.DecimalFormat;
 
+import com.orangomango.graphcalc.math.Evaluator;
+
 // TODO: Parametric point
 public class GraphPoint extends GraphElement implements Transformable{
-	private Point2D	position;
+	private Point2D position;
 	private String name;
 
 	public GraphPoint(Color color, String pos){
