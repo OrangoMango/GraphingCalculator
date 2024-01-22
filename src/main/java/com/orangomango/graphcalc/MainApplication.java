@@ -115,11 +115,9 @@ public class MainApplication extends Application{
 								GraphFunction.addFunction(this.elements, f, this.leftPos, this.rightPos, this.parameters);
 								list.getItems().add(f);
 							} else {
+								// TODO: Make more generic (support more types)
 								if (text.startsWith("LINE")){
-									final String data = text.substring(5, text.length()-1);
-									GraphPoint a = (GraphPoint)this.elements.stream().filter(ele -> ele instanceof GraphPoint && ((GraphPoint)ele).getName().equals(data.split(",")[0].trim())).findAny().orElse(null);
-									GraphPoint b = (GraphPoint)this.elements.stream().filter(ele -> ele instanceof GraphPoint && ((GraphPoint)ele).getName().equals(data.split(",")[1].trim())).findAny().orElse(null);
-									GraphLine l = new GraphLine(picker.getValue(), a, b);
+									GraphLine l = new GraphLine(picker.getValue(), text, this.elements);
 									this.elements.add(l);
 									list.getItems().add(l);
 								} else {

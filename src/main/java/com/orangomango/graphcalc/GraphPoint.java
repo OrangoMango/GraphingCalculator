@@ -17,11 +17,7 @@ public class GraphPoint extends GraphElement implements Transformable{
 
 	public GraphPoint(Color color, String pos){
 		super(color);
-		this.name = pos.split("\\(")[0];
-		if (name.isBlank()){
-			throw new IllegalArgumentException("Name is empty");
-		}
-		this.position = getCoords(pos.split("\\(", 2)[1]);
+		edit(pos, null);
 	}
 
 	private Point2D getCoords(String pos){
@@ -54,8 +50,13 @@ public class GraphPoint extends GraphElement implements Transformable{
 	}
 
 	@Override
+	// TODO: implement with params
 	public void edit(String f, Map<String, Double> params){
-		// TODO
+		this.name = f.split("\\(")[0];
+		if (name.isBlank()){
+			throw new IllegalArgumentException("Name is empty");
+		}
+		this.position = getCoords(f.split("\\(", 2)[1]);
 	}
 
 	@Override
