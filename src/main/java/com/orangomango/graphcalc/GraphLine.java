@@ -6,7 +6,7 @@ import javafx.scene.paint.Color;
 import java.util.*;
 
 public class GraphLine extends GraphElement{
-	private List<GraphPoint> points = new ArrayList<>();
+	private List<GraphPoint> points;
 	private List<GraphElement> elements;
 
 	public GraphLine(Color color, String def, List<GraphElement> elements){
@@ -19,11 +19,15 @@ public class GraphLine extends GraphElement{
 	// TODO: implement with params
 	public void edit(String f, Map<String, Double> params){
 		final String data = f.substring(5, f.length()-1);
-		this.points.clear();
+		List<GraphPoint> newPoints = new ArrayList<>();
 		for (String name : data.split(",")){
 			GraphPoint point = (GraphPoint)this.elements.stream().filter(ele -> ele instanceof GraphPoint && ((GraphPoint)ele).getName().equals(name.trim())).findAny().orElse(null);
-			this.points.add(point);
+			if (point == null){
+				throw new IllegalArgumentException("Point "+name+" does not exist");
+			}
+			newPoints.add(point);
 		}
+		this.points = newPoints;
 	}
 
 	@Override

@@ -149,7 +149,7 @@ public class MainApplication extends Application{
 					try {
 						TextInputDialog input = new TextInputDialog(selected.toString());
 						input.setTitle("Edit");
-						input.setHeaderText("Edit equation");
+						input.setHeaderText("Edit object: "+selected.getClass().getSimpleName());
 						input.showAndWait().ifPresent(v -> {
 							selected.edit(v, this.parameters);
 							list.refresh();
