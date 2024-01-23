@@ -49,6 +49,10 @@ public class GraphFunction extends GraphElement implements Transformable{
 	}
 
 	private void buildInterval(double from, double to, Map<String, Double> args){
+		// Fix the bounds
+		from = from < 0 ? Math.floor(from) : Math.ceil(from);
+		to = to < 0 ? Math.floor(to) : Math.ceil(to);
+
 		List<Pair<Double, Double>> values1 = new ArrayList<>();
 		List<Pair<Double, Double>> values2 = new ArrayList<>();
 
@@ -83,6 +87,10 @@ public class GraphFunction extends GraphElement implements Transformable{
 	}
 
 	public void expand(double from, double to, Map<String, Double> args){
+		// Fix the bounds
+		from = from < 0 ? Math.floor(from) : Math.ceil(from);
+		to = to < 0 ? Math.floor(to) : Math.ceil(to);
+
 		boolean firstDone = false;
 		for (Result result : this.results){
 			if (Math.abs(result.getFrom()-from) < FUNCTION_INTERVAL && Math.abs(to-result.getTo()) < FUNCTION_INTERVAL){
