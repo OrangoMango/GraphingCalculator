@@ -209,6 +209,11 @@ public class GraphFunction extends GraphElement implements Transformable{
 	}
 
 	@Override
+	public Identifier getIdentifier(){
+		return Identifier.GRAPH_FUNCTION;
+	}
+
+	@Override
 	public String toString(){
 		return this.equation.toString();
 	}

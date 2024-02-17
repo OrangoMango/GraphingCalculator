@@ -14,6 +14,7 @@ public abstract class GraphElement{
 
 	public abstract void render(GraphicsContext gc, double topPos, double bottomPos, double scaleFactor);
 	public abstract void edit(String f, Map<String, Double> params);
+	public abstract Identifier getIdentifier();
 
 	public Color getColor(){
 		return this.color;

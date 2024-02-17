@@ -3,6 +3,7 @@ package com.orangomango.graphcalc;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import javafx.stage.FileChooser;
 import javafx.scene.Scene;
 import javafx.scene.Cursor;
 import javafx.scene.layout.GridPane;
@@ -55,6 +56,69 @@ public class MainApplication extends Application{
 		// Menu
 		MenuBar menuBar = new MenuBar();
 		Menu fileMenu = new Menu("File");
+		MenuItem save = new MenuItem("Save");
+		save.setOnAction(e -> {
+			FileChooser chooser = new FileChooser();
+			chooser.setTitle("Save file");
+			chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("GraphCalc files", "*.gcalc"));
+			File file = chooser.showSaveDialog(stage);
+			if (file != null){
+				try {
+					BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+					for (GraphElement element : this.elements){
+						writer.write(String.format("%s:%s %s %s %s\n", element.getIdentifier().getId(), element.toString(), element.getColor().getRed(), element.getColor().getGreen(), element.getColor().getBlue()));
+					}
+					writer.close();
+				} catch (IOException ex){
+					ex.printStackTrace();
+				}
+
+				Alert info = new Alert(Alert.AlertType.INFORMATION);
+				info.setTitle("File");
+				info.setHeaderText("File saved successfully");
+				info.showAndWait();
+			}
+		});
+		MenuItem load = new MenuItem("Load");
+		load.setOnAction(e -> {
+			FileChooser chooser = new FileChooser();
+			chooser.setTitle("Load file");
+			chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("GraphCalc files", "*.gcalc"));
+			File file = chooser.showOpenDialog(stage);
+			if (file != null){
+				try {
+					BufferedReader reader = new BufferedReader(new FileReader(file));
+					String line;
+					while ((line = reader.readLine()) != null){
+						if (!line.isBlank()){
+							String[] pieces = line.split(" ");
+							Color color = Color.color(Double.parseDouble(pieces[1]), Double.parseDouble(pieces[2]), Double.parseDouble(pieces[3]));
+							Identifier id = Identifier.parse(pieces[0].split(":")[0]);
+							switch (id){
+								case GRAPH_FUNCTION:
+									GraphFunction func = new GraphFunction(color, pieces[0].split(":")[1]);
+									GraphFunction.addFunction(this.elements, func, this.leftPos, this.rightPos, this.parameters);
+									break;
+								case GRAPH_POINT:
+									this.elements.add(new GraphPoint(color, pieces[0].split(":")[1]));
+									break;
+								case GRAPH_LINE:
+									this.elements.add(new GraphLine(color, pieces[0].split(":")[1], this.elements));
+									break;
+							}
+						}
+					}
+					reader.close();
+				} catch (IOException ex){
+					ex.printStackTrace();
+				}
+
+				Alert info = new Alert(Alert.AlertType.INFORMATION);
+				info.setTitle("File");
+				info.setHeaderText("File loaded successfully");
+				info.showAndWait();
+			}
+		});
 
 		// Edit menu
 		Menu editMenu = new Menu("Edit");
@@ -274,6 +338,7 @@ public class MainApplication extends Application{
 		});
 
 		menuBar.getMenus().addAll(fileMenu, editMenu, transformMenu);
+		fileMenu.getItems().addAll(save, load);
 		editMenu.getItems().addAll(editGraphs, calculate);
 		transformMenu.getItems().add(applyTransform);
 		pane.add(menuBar, 0, 0);
@@ -535,5 +600,10 @@ public class MainApplication extends Application{
 
 	public static void main(String[] args){
 		launch(args);
+
+		/*Equation eq = new Equation("y=5+2+6*x+2*x*3");
+		eq.getLeftSide().calculate(null);
+		System.out.println(eq);
+		System.exit(0);*/
 	}
 }

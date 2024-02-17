@@ -43,13 +43,18 @@ public class GraphLine extends GraphElement{
 	}
 
 	@Override
+	public Identifier getIdentifier(){
+		return Identifier.GRAPH_LINE;
+	}
+
+	@Override
 	public String toString(){
 		StringBuilder builder = new StringBuilder();
 		builder.append("LINE(");
 		for (int i = 0; i < this.points.size(); i++){
 			builder.append(this.points.get(i).getName());
 			if (i < this.points.size()-1){
-				builder.append(", ");
+				builder.append(",");
 			}
 		}
 		builder.append(")");

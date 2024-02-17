@@ -52,7 +52,7 @@ public class GraphPoint extends GraphElement implements Transformable{
 	@Override
 	// TODO: implement with params
 	public void edit(String f, Map<String, Double> params){
-		this.name = f.split("\\(")[0];
+		this.name = f.split("\\(")[0].replace(" ", ""); // Spaces are not allowed due to saving issues
 		if (name.isBlank()){
 			throw new IllegalArgumentException("Name is empty");
 		}
@@ -71,8 +71,13 @@ public class GraphPoint extends GraphElement implements Transformable{
 	}
 
 	@Override
+	public Identifier getIdentifier(){
+		return Identifier.GRAPH_POINT;
+	}
+
+	@Override
 	public String toString(){
 		DecimalFormat formatter = new DecimalFormat("#.###");
-		return String.format("%s(%s, %s)", this.name, formatter.format(this.position.getX()), formatter.format(this.position.getY()));
+		return String.format("%s(%s,%s)", this.name, formatter.format(this.position.getX()), formatter.format(this.position.getY()));
 	}
 }

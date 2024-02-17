@@ -55,6 +55,11 @@ public class Expression extends EquationPiece{
 	}
 
 	public void calculate(Map<String, Double> params){
+		/*System.out.format("Terms of %s:\n", this.getString(true));
+		for (EquationPiece piece : this.pieces){
+			System.out.println(piece+"\n");
+		}*/
+
 		for (EquationPiece piece : this.pieces){
 			for (EquationPiece f : piece.getChildren()){
 				Factor factor = (Factor)f;
